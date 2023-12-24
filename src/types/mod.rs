@@ -45,7 +45,6 @@ struct MinecraftVersionInfo {
 }
 
 // fabric
-
 struct FabricMinecraftVersion {
     version: String,
     stable: bool,
@@ -60,7 +59,6 @@ struct FabricLoader {
 }
 
 // quilt
-
 struct QuiltMinecraftVersion {
     version: String,
     stable: bool,
