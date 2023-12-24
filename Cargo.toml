@@ -2,9 +2,13 @@
 name = "mc-launcher-core"
 version = "0.0.1"
 license = "MIT"
-description = "todo"
+description = "mc launcher core"
+readme = "README.md"
+homepage = "https://github.com/Star-tears/mc-launcher-core"
+repository = "https://github.com/Star-tears/mc-launcher-core"
+keywords = ["minecraft", "mc", "launcher", "core"]
+categories = ["development-tools"]
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
