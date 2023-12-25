@@ -1,7 +1,7 @@
 use chrono::Utc;
 use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{collections::HashMap, env, sync::Mutex};
+use std::{collections::HashMap, sync::Mutex};
 
 use crate::types::helper_types::RequestsResponseCache;
 

@@ -1,155 +1,187 @@
 use chrono::{DateTime, Utc};
 
-struct MinecraftOptions {
-    username: String,
-    uuid: String,
-    token: String,
-    executable_path: String,
-    default_executable_path: String,
-    jvm_arguments: Vec<String>,
-    launcher_name: String,
-    launcher_version: String,
-    game_directory: String,
-    demo: bool,
-    custom_resolution: bool,
-    resolution_width: String,
-    resolution_height: String,
-    server: String,
-    port: String,
-    natives_directory: String,
-    enable_logging_config: bool,
-    disable_multiplayer: bool,
-    disable_chat: bool,
-    quick_play_path: Option<String>,
-    quick_play_singleplayer: Option<String>,
-    quick_play_multiplayer: Option<String>,
-    quick_play_realms: Option<String>,
+pub mod forge_types;
+pub mod helper_types;
+pub mod install_types;
+pub mod mrpack_types;
+pub mod runtime_types;
+pub mod shared_types;
+pub mod vanilla_launcher_types;
+
+pub struct MinecraftOptions {
+    pub username: String,
+    pub uuid: String,
+    pub token: String,
+    pub executable_path: String,
+    pub default_executable_path: String,
+    pub jvm_arguments: Vec<String>,
+    pub launcher_name: String,
+    pub launcher_version: String,
+    pub game_directory: String,
+    pub demo: bool,
+    pub custom_resolution: bool,
+    pub resolution_width: String,
+    pub resolution_height: String,
+    pub server: String,
+    pub port: String,
+    pub natives_directory: String,
+    pub enable_logging_config: bool,
+    pub disable_multiplayer: bool,
+    pub disable_chat: bool,
+    pub quick_play_path: Option<String>,
+    pub quick_play_singleplayer: Option<String>,
+    pub quick_play_multiplayer: Option<String>,
+    pub quick_play_realms: Option<String>,
 }
 
-struct CallbackDict {
-    set_status: Option<fn(String)>,
-    set_progress: Option<fn(i32)>,
-    set_max: Option<fn(i32)>,
+pub struct CallbackDict {
+    pub set_status: Option<fn(String)>,
+    pub set_progress: Option<fn(i32)>,
+    pub set_max: Option<fn(i32)>,
 }
 
-struct LatestMinecraftVersions {
-    release: String,
-    snapshot: String,
+pub struct LatestMinecraftVersions {
+    pub release: String,
+    pub snapshot: String,
 }
 
-struct MinecraftVersionInfo {
-    id: String,
-    type_: String,
-    release_time: DateTime<Utc>,
-    compliance_level: i32,
+pub struct MinecraftVersionInfo {
+    pub id: String,
+    pub type_: String,
+    pub release_time: DateTime<Utc>,
+    pub compliance_level: i32,
 }
 
 // fabric
-struct FabricMinecraftVersion {
-    version: String,
-    stable: bool,
+pub struct FabricMinecraftVersion {
+    pub version: String,
+    pub stable: bool,
 }
 
-struct FabricLoader {
-    separator: String,
-    build: i32,
-    maven: String,
-    version: String,
-    stable: bool,
+pub struct FabricLoader {
+    pub separator: String,
+    pub build: i32,
+    pub maven: String,
+    pub version: String,
+    pub stable: bool,
 }
 
 // quilt
-struct QuiltMinecraftVersion {
-    version: String,
-    stable: bool,
+pub struct QuiltMinecraftVersion {
+    pub version: String,
+    pub stable: bool,
 }
 
-struct QuiltLoader {
-    separator: String,
-    build: i32,
-    maven: String,
-    version: String,
+pub struct QuiltLoader {
+    pub separator: String,
+    pub build: i32,
+    pub maven: String,
+    pub version: String,
 }
 
-struct Image {
-    content_type: String,
-    image_url: String,
-    alt: Option<String>,
-    video_url: Option<String>,
-    video_type: Option<String>,
-    video_provider: Option<String>,
-    video_id: Option<String>,
-    linkurl: Option<String>,
-    background_color: Option<String>,
+pub struct Image {
+    pub content_type: String,
+    pub image_url: String,
+    pub alt: Option<String>,
+    pub video_url: Option<String>,
+    pub video_type: Option<String>,
+    pub video_provider: Option<String>,
+    pub video_id: Option<String>,
+    pub linkurl: Option<String>,
+    pub background_color: Option<String>,
 }
 
-struct Tile {
-    sub_header: String,
-    image: Image,
-    tile_size: String,
-    title: String,
+pub struct Tile {
+    pub sub_header: String,
+    pub image: Image,
+    pub tile_size: String,
+    pub title: String,
 }
 
-struct Article {
-    default_tile: Tile,
-    article_lang: String,
-    primary_category: String,
-    categories: Vec<String>,
-    article_url: String,
-    publish_date: String,
-    tags: Vec<String>,
-    preferred_tile: Option<Tile>,
+pub struct Article {
+    pub default_tile: Tile,
+    pub article_lang: String,
+    pub primary_category: String,
+    pub categories: Vec<String>,
+    pub article_url: String,
+    pub publish_date: String,
+    pub tags: Vec<String>,
+    pub preferred_tile: Option<Tile>,
 }
 
-struct Articles {
-    article_grid: Vec<Article>,
-    article_count: i32,
+pub struct Articles {
+    pub article_grid: Vec<Article>,
+    pub article_count: i32,
 }
 
 // java_utils
-struct JavaInformation {
-    path: String,
-    name: String,
-    version: String,
-    java_path: String,
-    javaw_path: Option<String>,
-    is_64bit: bool,
-    openjdk: bool,
+#[derive(Debug)]
+pub struct JavaInformation {
+    pub path: String,
+    pub name: String,
+    pub version: String,
+    pub java_path: String,
+    pub javaw_path: Option<String>,
+    pub is_64bit: bool,
+    pub openjdk: bool,
 }
 
 // vanilla_launcher
-struct VanillaLauncherProfileResolution {
-    height: i32,
-    width: i32,
+pub struct VanillaLauncherProfileResolution {
+    pub height: i32,
+    pub width: i32,
 }
 
-struct VanillaLauncherProfile {
-    name: String,
-    version: Option<String>,
-    version_type: String,
-    game_directory: Option<String>,
-    java_executable: Option<String>,
-    java_arguments: Option<Vec<String>>,
-    custom_resolution: Option<VanillaLauncherProfileResolution>,
+pub struct VanillaLauncherProfile {
+    pub name: String,
+    pub version: Option<String>,
+    pub version_type: String,
+    pub game_directory: Option<String>,
+    pub java_executable: Option<String>,
+    pub java_arguments: Option<Vec<String>>,
+    pub custom_resolution: Option<VanillaLauncherProfileResolution>,
 }
 
 // mrpack
-struct MrpackInformation {
-    name: String,
-    summary: String,
-    version_id: String,
-    format_version: i32,
-    minecraft_version: String,
-    optional_files: Vec<String>,
+pub struct MrpackInformation {
+    pub name: String,
+    pub summary: String,
+    pub version_id: String,
+    pub format_version: i32,
+    pub minecraft_version: String,
+    pub optional_files: Vec<String>,
 }
 
-struct MrpackInstallOptions {
-    optional_files: Vec<String>,
-    skip_dependencies_install: bool,
+pub struct MrpackInstallOptions {
+    pub optional_files: Vec<String>,
+    pub skip_dependencies_install: bool,
 }
 
 // runtime
-struct JvmRuntimeInformation {
-    name: String,
-    released: DateTime<Utc>,
+pub struct JvmRuntimeInformation {
+    pub name: String,
+    pub released: DateTime<Utc>,
+}
+
+// impl
+impl JavaInformation {
+    pub fn new(
+        path: &str,
+        name: &str,
+        version: &str,
+        is_64bit: bool,
+        openjdk: bool,
+        java_path: &str,
+        javaw_path: Option<String>,
+    ) -> Self {
+        JavaInformation {
+            path: path.to_string(),
+            name: name.to_string(),
+            version: version.to_string(),
+            is_64bit,
+            openjdk,
+            java_path: java_path.to_string(),
+            javaw_path,
+        }
+    }
 }
