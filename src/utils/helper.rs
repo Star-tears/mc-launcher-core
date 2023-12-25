@@ -1,22 +1,26 @@
 use chrono::Utc;
 use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{collections::HashMap, env, sync::Mutex};
+use std::{collections::HashMap, sync::Mutex};
 
 use crate::types::helper_types::RequestsResponseCache;
-
-// return the user agent of mc-launcher-core
-pub fn get_user_agent() -> String {
-    let user_agent_cache = std::env::var("USER_AGENT_CACHE").unwrap_or_else(|_| {
-        env::set_var("MC_LAUNCHER_CORE", "skycrafting");
-        "mc-launcher-core/skycrafting".to_string()
-    });
-    user_agent_cache
-}
 
 lazy_static! {
     static ref REQUESTS_RESPONSE_CACHE: Mutex<HashMap<String, RequestsResponseCache>> =
         Mutex::new(HashMap::new());
+    static ref USER_AGENT_CACHE: Mutex<Option<String>> = Mutex::new(None);
+}
+
+// return the user agent of mc-launcher-core
+pub fn get_user_agent() -> String {
+    let mut cache = USER_AGENT_CACHE.lock().unwrap();
+    if let Some(ref user_agent) = *cache {
+        return user_agent.clone();
+    } else {
+        let user_agent = "mc-launcher-core/skycrafting".to_string();
+        *cache = Some(user_agent.clone());
+        return user_agent;
+    }
 }
 
 pub fn get_requests_response_cache(url: &str) -> Result<Value, reqwest::Error> {
@@ -57,10 +61,8 @@ mod tests {
 
     #[test]
     fn test_get_requests_response_cache() {
-        if let Ok(response) = get_requests_response_cache(
-            "https://httpbin.org/ip",
-        ) {
-            println!("{:?}", response);
+        if let Ok(response) = get_requests_response_cache("https://httpbin.org/ip") {
+            println!("{:#?}", response);
         }
     }
 }

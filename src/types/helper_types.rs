@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
 use chrono::{DateTime, Utc};
-use reqwest;
 use serde_json::Value;
 
 pub struct RequestsResponseCache {
@@ -9,8 +6,8 @@ pub struct RequestsResponseCache {
     pub datetime: DateTime<Utc>,
 }
 
-struct MavenMetadata {
-    release: String,
-    latest: String,
-    versions: Vec<String>,
+pub struct MavenMetadata {
+    pub release: String,
+    pub latest: String,
+    pub versions: Vec<String>,
 }
