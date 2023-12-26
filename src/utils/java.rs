@@ -84,8 +84,8 @@ fn search_java_directory<P: AsRef<Path>>(path: P) -> Vec<PathBuf> {
     Vec::new()
 }
 
-pub fn find_system_java_versions(
-    additional_directories: Option<Vec<impl AsRef<Path>>>,
+pub fn find_system_java_versions<P: AsRef<Path>>(
+    additional_directories: Option<Vec<P>>,
 ) -> Vec<PathBuf> {
     let os = env::consts::OS;
     let mut java_list: Vec<PathBuf> = Vec::new();
@@ -107,8 +107,8 @@ pub fn find_system_java_versions(
     java_list
 }
 
-pub fn find_system_java_versions_information(
-    additional_directories: Option<Vec<impl AsRef<Path>>>,
+pub fn find_system_java_versions_information<P: AsRef<Path>>(
+    additional_directories: Option<Vec<P>>,
 ) -> Vec<JavaInformation> {
     let mut java_information_list: Vec<JavaInformation> = Vec::new();
 
@@ -141,7 +141,7 @@ mod tests {
     fn test_find_system_java_versions_information() {
         println!(
             "{:#?}",
-            find_system_java_versions_information(Some::<Vec<&str>>(vec![]))
+            find_system_java_versions_information(None::<Vec<&str>>)
         );
     }
 }
