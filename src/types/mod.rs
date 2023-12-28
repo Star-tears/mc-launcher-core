@@ -1,8 +1,10 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Deserializer};
 
 pub mod forge_types;
 pub mod helper_types;
 pub mod install_types;
+pub mod microsoft_types;
 pub mod mrpack_types;
 pub mod runtime_types;
 pub mod shared_types;
@@ -40,14 +42,17 @@ pub struct CallbackDict {
     pub set_max: Option<fn(i32)>,
 }
 
+#[derive(Debug)]
 pub struct LatestMinecraftVersions {
     pub release: String,
     pub snapshot: String,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct MinecraftVersionInfo {
     pub id: String,
-    pub type_: String,
+    pub r#type: String,
+    #[serde(deserialize_with = "deserialize_datetime")]
     pub release_time: DateTime<Utc>,
     pub compliance_level: i32,
 }
@@ -184,4 +189,12 @@ impl JavaInformation {
             javaw_path,
         }
     }
+}
+
+pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    Ok(DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?.with_timezone(&Utc))
 }
