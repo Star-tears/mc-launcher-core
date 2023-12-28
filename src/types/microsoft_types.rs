@@ -21,18 +21,18 @@ pub struct DisplayClaims {
 
 #[derive(Debug, Deserialize)]
 pub struct XBLResponse {
-    pub IssueInstant: String,
-    pub NotAfter: String,
-    pub Token: String,
-    pub DisplayClaims: DisplayClaims,
+    pub issue_instant: String,
+    pub not_after: String,
+    pub token: String,
+    pub display_claims: DisplayClaims,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct XSTSResponse {
-    pub IssueInstant: String,
-    pub NotAfter: String,
-    pub Token: String,
-    pub DisplayClaimns: DisplayClaims,
+    pub issue_instant: String,
+    pub not_after: String,
+    pub token: String,
+    pub display_claimns: DisplayClaims,
 }
 
 #[derive(Debug, Deserialize)]
@@ -45,7 +45,7 @@ pub struct MinecraftStoreItem {
 pub struct MinecraftStoreResponse {
     pub items: Vec<MinecraftStoreItem>,
     pub signature: String,
-    pub keyId: String,
+    pub key_id: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -87,7 +87,7 @@ pub struct MinecraftProfileResponse {
     pub skins: Vec<MinecraftProfileSkin>,
     pub capes: Vec<MinecraftProfileCape>,
     pub error: String,
-    pub errorMessage: String,
+    pub error_message: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,7 +97,7 @@ pub struct CompleteLoginResponse {
     pub skins: Vec<MinecraftProfileSkin>,
     pub capes: Vec<MinecraftProfileCape>,
     pub error: String,
-    pub errorMessage: String,
+    pub error_message: String,
     pub access_token: String,
     pub refresh_token: String,
 }

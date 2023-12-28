@@ -1,7 +1,10 @@
 use std::env;
 use std::path::PathBuf;
 
-use crate::types::LatestMinecraftVersions;
+use chrono::DateTime;
+
+use crate::types::shared_types::VersionListManifestJson;
+use crate::types::{LatestMinecraftVersions, MinecraftVersionInfo};
 
 use self::helper::get_requests_response_cache;
 
@@ -48,6 +51,23 @@ pub fn get_latest_version() -> Result<LatestMinecraftVersions, Box<dyn std::erro
     })
 }
 
+pub fn get_version_list() -> Result<Vec<MinecraftVersionInfo>, Box<dyn std::error::Error>> {
+    let response = get_requests_response_cache(
+        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+    )?;
+    let vlist: VersionListManifestJson = serde_json::from_value(response)?;
+    let mut res = Vec::new();
+    for v in vlist.versions {
+        res.push(MinecraftVersionInfo {
+            id: v.id,
+            r#type: v.r#type,
+            release_time: DateTime::parse_from_rfc3339(v.release_time.as_str())?.into(),
+            compliance_level: v.compliance_level,
+        })
+    }
+    Ok(res)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -62,6 +82,13 @@ mod tests {
     fn test_get_latest_version() {
         if let Ok(latest_version) = get_latest_version() {
             println!("Minecraft latest_version: {:#?}", latest_version);
+        }
+    }
+
+    #[test]
+    fn test_get_version_list() {
+        if let Ok(version_list) = get_version_list() {
+            println!("Minecraft version_list: {:#?}", version_list);
         }
     }
 }
