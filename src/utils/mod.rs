@@ -225,32 +225,44 @@ pub fn get_minecraft_news(options: MinecraftNewsOptions) -> Result<Articles, req
 
     Ok(response)
 }
+
+pub fn is_vanilla_version(version: &str) -> bool {
+    if let Ok(version_list) = get_version_list() {
+        for i in version_list {
+            if i.id == version {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_get_minecraft_directory() {
+    fn debug_get_minecraft_directory() {
         let minecraft_directory = get_minecraft_directory();
         println!("Minecraft directory: {:?}", minecraft_directory);
     }
 
     #[test]
-    fn test_get_latest_version() {
+    fn debug_get_latest_version() {
         if let Ok(latest_version) = get_latest_version() {
             println!("Minecraft latest_version: {:#?}", latest_version);
         }
     }
 
     #[test]
-    fn test_get_version_list() {
+    fn debug_get_version_list() {
         if let Ok(version_list) = get_version_list() {
             println!("Minecraft version_list: {:#?}", version_list);
         }
     }
 
     #[test]
-    fn test_get_installed_versions() {
+    fn debug_get_installed_versions() {
         // match get_installed_versions(r"H:\mc\mc-launcher-core\test\.minecraft") {
         //     Ok(res) => {
         //         println!("Minecraft installed_versions: {:#?}", res);
@@ -260,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_available_versions() {
+    fn debug_get_available_versions() {
         // println!(
         //     "Available versions: {:#?}",
         //     get_available_versions(r"H:\mc\mc-launcher-core\test\.minecraft")
@@ -268,22 +280,22 @@ mod tests {
     }
 
     #[test]
-    fn test_get_java_executable() {
+    fn debug_get_java_executable() {
         println!("Java excutable path: {:#?}", get_java_executable());
     }
 
     #[test]
-    fn test_get_core_version() {
+    fn debug_get_core_version() {
         println!("mc-launcher-core version: {}", get_core_version());
     }
 
     #[test]
-    fn test_generate_test_options() {
+    fn debug_generate_test_options() {
         println!("Random MinecraftOptions: {:#?}", generate_test_options());
     }
 
     #[test]
-    fn test_is_version_valid() {
+    fn debug_is_version_valid() {
         // println!(
         //     "is_version_valid: {}",
         //     is_version_valid("1.20", r"H:\mc\mc-launcher-core\test\.minecraft")
@@ -291,11 +303,17 @@ mod tests {
     }
 
     #[test]
-    fn test_get_minecraft_news() {
-        let default_mcnews_options = MinecraftNewsOptions::default();
-        match get_minecraft_news(default_mcnews_options) {
-            Ok(res) => println!("{:#?}", res),
-            Err(e) => println!("{:#?}", e),
-        }
+    fn debug_get_minecraft_news() {
+        // let default_mcnews_options = MinecraftNewsOptions::default();
+        // match get_minecraft_news(default_mcnews_options) {
+        //     Ok(res) => println!("{:#?}", res),
+        //     Err(e) => println!("{:#?}", e),
+        // }
+    }
+
+    #[test]
+    fn test_is_vanilla_version() {
+        assert_eq!(is_vanilla_version("1.20"), true);
+        assert_eq!(is_vanilla_version("20.24"), false);
     }
 }
