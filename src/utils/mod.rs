@@ -126,6 +126,59 @@ pub fn get_available_versions<P: AsRef<Path>>(minecraft_directory: P) -> Vec<Min
     version_list
 }
 
+pub fn get_java_executable() -> Option<String> {
+    let os = std::env::consts::OS;
+
+    if os == "windows" {
+        if let Some(java_home) = env::var_os("JAVA_HOME") {
+            let java_home_path = Path::new(&java_home);
+            let javaw_path = java_home_path.join("bin").join("javaw.exe");
+            if javaw_path.is_file() {
+                return Some(javaw_path.to_string_lossy().into_owned());
+            }
+        }
+
+        if let Ok(_) =
+            fs::metadata(r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe")
+        {
+            return Some(
+                r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe".to_string(),
+            );
+        }
+
+        if let Ok(javaw_path) = which::which("javaw") {
+            return Some(javaw_path.to_string_lossy().into_owned());
+        }
+        return Some("javaw".to_string());
+    } else if let Some(java_home) = env::var_os("JAVA_HOME") {
+        let java_home_path = Path::new(&java_home);
+        let java_path = java_home_path.join("bin").join("java");
+        if java_path.is_file() {
+            return Some(java_path.to_string_lossy().into_owned());
+        }
+    } else if os == "macos" || os == "ios" {
+        if let Ok(java_path) = which::which("java") {
+            return Some(java_path.to_string_lossy().into_owned());
+        }
+    } else {
+        if let Ok(java_link) = fs::read_link("/etc/alternatives/java") {
+            return Some(java_link.to_string_lossy().into_owned());
+        } else if let Ok(runtime_link) = fs::read_link("/usr/lib/jvm/default-runtime") {
+            let java_path = Path::new("/usr/lib/jvm")
+                .join(runtime_link)
+                .join("bin")
+                .join("java");
+            if java_path.is_file() {
+                return Some(java_path.to_string_lossy().into_owned());
+            }
+        } else if let Ok(java_path) = which::which("java") {
+            return Some(java_path.to_string_lossy().into_owned());
+        }
+    }
+
+    Some("java".to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,5 +219,10 @@ mod tests {
         //     "Available versions: {:#?}",
         //     get_available_versions(r"H:\mc\mc-launcher-core\test\.minecraft")
         // );
+    }
+
+    #[test]
+    fn test_get_java_executable() {
+        println!("{:#?}", get_java_executable());
     }
 }
