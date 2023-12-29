@@ -194,6 +194,19 @@ pub fn generate_test_options() -> MinecraftOptions {
     MinecraftOptions::new(username, uuid.to_string(), token)
 }
 
+pub fn is_version_valid(version: &str, minecraft_directory: impl AsRef<Path>) -> bool {
+    let versions_path = minecraft_directory.as_ref().join("versions");
+
+    if versions_path.join(version).is_dir() {
+        return true;
+    }
+
+    if let Ok(version_list) = get_version_list() {
+        return version_list.iter().any(|i| i.id == version);
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,16 +251,24 @@ mod tests {
 
     #[test]
     fn test_get_java_executable() {
-        println!("{:#?}", get_java_executable());
+        println!("Java excutable path: {:#?}", get_java_executable());
     }
 
     #[test]
     fn test_get_core_version() {
-        println!("{}", get_core_version());
+        println!("mc-launcher-core version: {}", get_core_version());
     }
 
     #[test]
     fn test_generate_test_options() {
         println!("Random MinecraftOptions: {:#?}", generate_test_options());
+    }
+
+    #[test]
+    fn test_is_version_valid() {
+        // println!(
+        //     "is_version_valid: {}",
+        //     is_version_valid("1.20", r"H:\mc\mc-launcher-core\test\.minecraft")
+        // );
     }
 }
