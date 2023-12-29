@@ -119,8 +119,6 @@ pub struct ClientJson {
     pub compliance_level: i32,
     #[serde(rename = "inheritsFrom")]
     pub inherits_from: Option<String>,
-    #[serde(rename = "clientVersion")]
-    pub client_version: Option<String>,
 }
 
 // need same as json

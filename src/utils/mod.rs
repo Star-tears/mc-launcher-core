@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
@@ -105,6 +106,26 @@ pub fn get_installed_versions(
     Ok(version_list)
 }
 
+pub fn get_available_versions<P: AsRef<Path>>(minecraft_directory: P) -> Vec<MinecraftVersionInfo> {
+    let mut version_list = Vec::new();
+    let mut version_check = HashSet::new();
+
+    if let Ok(vlist) = get_version_list() {
+        for i in vlist {
+            version_list.push(i.clone());
+            version_check.insert(i.id);
+        }
+    }
+    if let Ok(installed_versions) = get_installed_versions(minecraft_directory) {
+        for i in installed_versions {
+            if !version_check.contains(&i.id) {
+                version_list.push(i);
+            }
+        }
+    }
+    version_list
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,11 +152,19 @@ mod tests {
 
     #[test]
     fn test_get_installed_versions() {
-        // match get_installed_versions(r"H:\mc\PCL\Release 2.3.0\.minecraft") {
+        // match get_installed_versions(r"H:\mc\mc-launcher-core\test\.minecraft") {
         //     Ok(res) => {
         //         println!("Minecraft installed_versions: {:#?}", res);
         //     }
         //     Err(e) => println!("{:#?}", e),
         // }
+    }
+
+    #[test]
+    fn test_get_available_versions() {
+        // println!(
+        //     "Available versions: {:#?}",
+        //     get_available_versions(r"H:\mc\mc-launcher-core\test\.minecraft")
+        // );
     }
 }
