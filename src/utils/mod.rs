@@ -3,9 +3,11 @@ use std::path::{Path, PathBuf};
 use std::{env, fs, io};
 
 use chrono::{DateTime, TimeZone, Utc};
+use rand::Rng;
+use uuid::Uuid;
 
 use crate::types::shared_types::{ClientJson, VersionListManifestJson};
-use crate::types::{LatestMinecraftVersions, MinecraftVersionInfo};
+use crate::types::{LatestMinecraftVersions, MinecraftOptions, MinecraftVersionInfo};
 
 use self::helper::get_requests_response_cache;
 
@@ -179,6 +181,19 @@ pub fn get_java_executable() -> Option<String> {
     Some("java".to_string())
 }
 
+// Return the version of mc-launcher-core
+pub fn get_core_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+pub fn generate_test_options() -> MinecraftOptions {
+    let username = format!("Player{}", rand::thread_rng().gen_range(100..1000));
+    let uuid = Uuid::new_v4();
+    let token = String::new();
+
+    MinecraftOptions::new(username, uuid.to_string(), token)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -224,5 +239,15 @@ mod tests {
     #[test]
     fn test_get_java_executable() {
         println!("{:#?}", get_java_executable());
+    }
+
+    #[test]
+    fn test_get_core_version() {
+        println!("{}", get_core_version());
+    }
+
+    #[test]
+    fn test_generate_test_options() {
+        println!("Random MinecraftOptions: {:#?}", generate_test_options());
     }
 }
