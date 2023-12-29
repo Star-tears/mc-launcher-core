@@ -1,9 +1,9 @@
-use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::{env, fs, io};
 
-use chrono::DateTime;
+use chrono::{DateTime, TimeZone, Utc};
 
-use crate::types::shared_types::VersionListManifestJson;
+use crate::types::shared_types::{ClientJson, VersionListManifestJson};
 use crate::types::{LatestMinecraftVersions, MinecraftVersionInfo};
 
 use self::helper::get_requests_response_cache;
@@ -68,6 +68,43 @@ pub fn get_version_list() -> Result<Vec<MinecraftVersionInfo>, Box<dyn std::erro
     Ok(res)
 }
 
+pub fn get_installed_versions(
+    minecraft_directory: impl AsRef<Path>,
+) -> Result<Vec<MinecraftVersionInfo>, Box<dyn std::error::Error>> {
+    let versions_path = minecraft_directory.as_ref().join("versions");
+    let dir_list = match fs::read_dir(versions_path) {
+        Ok(dir) => dir,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(vec![]),
+        Err(e) => return Err(Box::new(e)),
+    };
+    let mut version_list = Vec::new();
+    for entry in dir_list {
+        let entry = entry?;
+        let mut dir_name = entry.file_name().to_string_lossy().to_string();
+        dir_name.push_str(".json");
+        let path = entry.path().join(dir_name);
+        if !path.is_file() || path.extension().unwrap_or_default() != "json" {
+            continue;
+        }
+        let file_content = fs::read_to_string(&path)?;
+        let version_data: ClientJson = serde_json::from_str(file_content.as_str())?;
+        let release_time = match DateTime::parse_from_rfc3339(&version_data.release_time) {
+            Ok(time) => time.with_timezone(&Utc),
+            Err(_) => Utc.timestamp_opt(0, 0).unwrap(),
+        };
+        let info = MinecraftVersionInfo {
+            id: version_data.id,
+            r#type: version_data.r#type,
+            release_time,
+            compliance_level: version_data.compliance_level,
+        };
+
+        version_list.push(info);
+    }
+
+    Ok(version_list)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -90,5 +127,15 @@ mod tests {
         if let Ok(version_list) = get_version_list() {
             println!("Minecraft version_list: {:#?}", version_list);
         }
+    }
+
+    #[test]
+    fn test_get_installed_versions() {
+        // match get_installed_versions(r"H:\mc\PCL\Release 2.3.0\.minecraft") {
+        //     Ok(res) => {
+        //         println!("Minecraft installed_versions: {:#?}", res);
+        //     }
+        //     Err(e) => println!("{:#?}", e),
+        // }
     }
 }

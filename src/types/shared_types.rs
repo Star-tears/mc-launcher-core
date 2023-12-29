@@ -4,15 +4,22 @@ use std::collections::HashMap;
 #[derive(Debug, Deserialize)]
 pub struct ClientJsonRule {
     pub action: String,
-    pub os: HashMap<String, String>,
-    pub features: HashMap<String, bool>,
+    pub os: Option<HashMap<String, String>>,
+    pub features: Option<HashMap<String, bool>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum StringAndVecStringValue {
+    StringValue(String),
+    VecStringValue(Vec<String>),
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ClientJsonArgumentRule {
     pub compatibility_rules: Option<Vec<ClientJsonRule>>,
     pub rules: Option<Vec<ClientJsonRule>>,
-    pub value: Option<String>,
+    pub value: Option<StringAndVecStringValue>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -20,6 +27,7 @@ pub struct ClientJsonAssetIndex {
     pub id: String,
     pub sha1: String,
     pub size: i32,
+    #[serde(rename = "totalSize")]
     pub total_size: i32,
     pub url: String,
 }
@@ -34,6 +42,7 @@ pub struct ClientJsonDownloads {
 #[derive(Debug, Deserialize)]
 pub struct ClientJsonJavaVersion {
     pub component: String,
+    #[serde(rename = "majorVersion")]
     pub major_version: i32,
 }
 
@@ -54,11 +63,11 @@ pub struct ClientJsonLibraryDownloads {
 #[derive(Debug, Deserialize)]
 pub struct ClientJsonLibrary {
     pub name: String,
-    pub downloads: ClientJsonLibraryDownloads,
+    pub downloads: Option<ClientJsonLibraryDownloads>,
     pub extract: Option<HashMap<String, Vec<String>>>,
     pub rules: Option<Vec<ClientJsonRule>>,
     pub natives: Option<HashMap<String, String>>,
-    pub url: String,
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,24 +86,41 @@ pub struct ClientJsonLogging {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum StringAndClientJsonArgumentRuleValue {
+    StringValue(String),
+    ClientJsonArgumentRuleValue(ClientJsonArgumentRule),
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ClientJson {
     pub id: String,
-    pub jar: String,
-    pub arguments: HashMap<String, Vec<String>>,
-    pub minecraft_arguments: String,
+    pub jar: Option<String>,
+    pub arguments: HashMap<String, Vec<StringAndClientJsonArgumentRuleValue>>,
+    #[serde(rename = "minecraftArguments")]
+    pub minecraft_arguments: Option<String>,
+    #[serde(rename = "assetIndex")]
     pub asset_index: ClientJsonAssetIndex,
     pub assets: String,
     pub downloads: HashMap<String, ClientJsonDownloads>,
+    #[serde(rename = "javaVersion")]
     pub java_version: ClientJsonJavaVersion,
     pub libraries: Vec<ClientJsonLibrary>,
     pub logging: HashMap<String, ClientJsonLogging>,
+    #[serde(rename = "mainClass")]
     pub main_class: String,
+    #[serde(rename = "minimumLauncherVersion")]
     pub minimum_launcher_version: i32,
+    #[serde(rename = "releaseTime")]
     pub release_time: String,
     pub time: String,
     pub r#type: String,
+    #[serde(rename = "complianceLevel")]
     pub compliance_level: i32,
-    pub inherits_from: String,
+    #[serde(rename = "inheritsFrom")]
+    pub inherits_from: Option<String>,
+    #[serde(rename = "clientVersion")]
+    pub client_version: Option<String>,
 }
 
 // need same as json
