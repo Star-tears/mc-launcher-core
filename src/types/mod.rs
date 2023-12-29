@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::Deserialize;
 
 pub mod forge_types;
 pub mod helper_types;
@@ -83,18 +84,30 @@ pub struct QuiltLoader {
     pub version: String,
 }
 
+// minecraft news
+pub struct MinecraftNewsOptions {
+    pub page_size: i32,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Image {
     pub content_type: String,
+    #[serde(rename = "imageURL")]
     pub image_url: String,
     pub alt: Option<String>,
+    #[serde(rename = "videoURL")]
     pub video_url: Option<String>,
+    #[serde(rename = "videoType")]
     pub video_type: Option<String>,
+    #[serde(rename = "videoProvider")]
     pub video_provider: Option<String>,
+    #[serde(rename = "videoId")]
     pub video_id: Option<String>,
     pub linkurl: Option<String>,
     pub background_color: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Tile {
     pub sub_header: String,
     pub image: Image,
@@ -102,9 +115,10 @@ pub struct Tile {
     pub title: String,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Article {
     pub default_tile: Tile,
-    pub article_lang: String,
+    pub article_lang: Option<String>,
     pub primary_category: String,
     pub categories: Vec<String>,
     pub article_url: String,
@@ -113,6 +127,7 @@ pub struct Article {
     pub preferred_tile: Option<Tile>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Articles {
     pub article_grid: Vec<Article>,
     pub article_count: i32,
@@ -217,6 +232,14 @@ impl MinecraftOptions {
             quick_play_singleplayer: None,
             quick_play_multiplayer: None,
             quick_play_realms: None,
+        }
+    }
+}
+
+impl Default for MinecraftNewsOptions {
+    fn default() -> Self {
+        MinecraftNewsOptions {
+            page_size: 20,
         }
     }
 }

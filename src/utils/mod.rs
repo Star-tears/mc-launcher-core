@@ -7,7 +7,9 @@ use rand::Rng;
 use uuid::Uuid;
 
 use crate::types::shared_types::{ClientJson, VersionListManifestJson};
-use crate::types::{LatestMinecraftVersions, MinecraftOptions, MinecraftVersionInfo};
+use crate::types::{
+    Articles, LatestMinecraftVersions, MinecraftNewsOptions, MinecraftOptions, MinecraftVersionInfo,
+};
 
 use self::helper::get_requests_response_cache;
 
@@ -207,6 +209,22 @@ pub fn is_version_valid(version: &str, minecraft_directory: impl AsRef<Path>) ->
     false
 }
 
+pub fn get_minecraft_news(options: MinecraftNewsOptions) -> Result<Articles, reqwest::Error> {
+    let client = reqwest::blocking::Client::new();
+    let url = format!(
+        "https://www.minecraft.net/content/minecraft-net/_jcr_content.articles.grid?pageSize={}",
+        options.page_size
+    );
+    let user_agent = format!("mc-launcher-core/{}", get_core_version());
+
+    let response: Articles = client
+        .get(&url)
+        .header(reqwest::header::USER_AGENT, user_agent)
+        .send()?
+        .json()?;
+
+    Ok(response)
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,5 +288,14 @@ mod tests {
         //     "is_version_valid: {}",
         //     is_version_valid("1.20", r"H:\mc\mc-launcher-core\test\.minecraft")
         // );
+    }
+
+    #[test]
+    fn test_get_minecraft_news() {
+        let default_mcnews_options = MinecraftNewsOptions::default();
+        match get_minecraft_news(default_mcnews_options) {
+            Ok(res) => println!("{:#?}", res),
+            Err(e) => println!("{:#?}", e),
+        }
     }
 }
