@@ -237,6 +237,21 @@ pub fn is_vanilla_version(version: &str) -> bool {
     false
 }
 
+pub fn is_platform_supported() -> bool {
+    match env::consts::OS {
+        "windows" | "macos" | "linux" => true,
+        _ => false,
+    }
+}
+
+pub fn is_minecraft_installed(minecraft_directory: impl AsRef<Path>) -> bool {
+    let versions_dir = minecraft_directory.as_ref().join("versions");
+    let libraries_dir = minecraft_directory.as_ref().join("libraries");
+    let assets_dir = minecraft_directory.as_ref().join("assets");
+
+    versions_dir.is_dir() && libraries_dir.is_dir() && assets_dir.is_dir()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,5 +330,13 @@ mod tests {
     fn test_is_vanilla_version() {
         assert_eq!(is_vanilla_version("1.20"), true);
         assert_eq!(is_vanilla_version("20.24"), false);
+    }
+
+    #[test]
+    fn debug_is_minecraft_installed() {
+        // println!(
+        //     "{}",
+        //     is_minecraft_installed(r"H:\mc\mc-launcher-core\test\.minecraft")
+        // );
     }
 }
