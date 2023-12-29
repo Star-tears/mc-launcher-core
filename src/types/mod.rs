@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 
 pub mod forge_types;
 pub mod helper_types;
@@ -10,26 +10,27 @@ pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
 
+#[derive(Debug, Default)]
 pub struct MinecraftOptions {
     pub username: String,
     pub uuid: String,
     pub token: String,
-    pub executable_path: String,
-    pub default_executable_path: String,
-    pub jvm_arguments: Vec<String>,
-    pub launcher_name: String,
-    pub launcher_version: String,
-    pub game_directory: String,
-    pub demo: bool,
-    pub custom_resolution: bool,
-    pub resolution_width: String,
-    pub resolution_height: String,
-    pub server: String,
-    pub port: String,
-    pub natives_directory: String,
-    pub enable_logging_config: bool,
-    pub disable_multiplayer: bool,
-    pub disable_chat: bool,
+    pub executable_path: Option<String>,
+    pub default_executable_path: Option<String>,
+    pub jvm_arguments: Option<Vec<String>>,
+    pub launcher_name: Option<String>,
+    pub launcher_version: Option<String>,
+    pub game_directory: Option<String>,
+    pub demo: Option<bool>,
+    pub custom_resolution: Option<bool>,
+    pub resolution_width: Option<String>,
+    pub resolution_height: Option<String>,
+    pub server: Option<String>,
+    pub port: Option<String>,
+    pub natives_directory: Option<String>,
+    pub enable_logging_config: Option<bool>,
+    pub disable_multiplayer: Option<bool>,
+    pub disable_chat: Option<bool>,
     pub quick_play_path: Option<String>,
     pub quick_play_singleplayer: Option<String>,
     pub quick_play_multiplayer: Option<String>,
@@ -48,11 +49,10 @@ pub struct LatestMinecraftVersions {
     pub snapshot: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct MinecraftVersionInfo {
     pub id: String,
     pub r#type: String,
-    #[serde(deserialize_with = "deserialize_datetime")]
     pub release_time: DateTime<Utc>,
     pub compliance_level: i32,
 }
@@ -84,18 +84,30 @@ pub struct QuiltLoader {
     pub version: String,
 }
 
+// minecraft news
+pub struct MinecraftNewsOptions {
+    pub page_size: i32,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Image {
     pub content_type: String,
+    #[serde(rename = "imageURL")]
     pub image_url: String,
     pub alt: Option<String>,
+    #[serde(rename = "videoURL")]
     pub video_url: Option<String>,
+    #[serde(rename = "videoType")]
     pub video_type: Option<String>,
+    #[serde(rename = "videoProvider")]
     pub video_provider: Option<String>,
+    #[serde(rename = "videoId")]
     pub video_id: Option<String>,
     pub linkurl: Option<String>,
     pub background_color: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Tile {
     pub sub_header: String,
     pub image: Image,
@@ -103,9 +115,10 @@ pub struct Tile {
     pub title: String,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Article {
     pub default_tile: Tile,
-    pub article_lang: String,
+    pub article_lang: Option<String>,
     pub primary_category: String,
     pub categories: Vec<String>,
     pub article_url: String,
@@ -114,6 +127,7 @@ pub struct Article {
     pub preferred_tile: Option<Tile>,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Articles {
     pub article_grid: Vec<Article>,
     pub article_count: i32,
@@ -191,10 +205,41 @@ impl JavaInformation {
     }
 }
 
-pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(DateTime::parse_from_rfc3339(&s).map_err(serde::de::Error::custom)?.with_timezone(&Utc))
+// impl
+impl MinecraftOptions {
+    pub fn new(username: String, uuid: String, token: String) -> Self {
+        Self {
+            username,
+            uuid,
+            token,
+            resolution_width: None,
+            resolution_height: None,
+            executable_path: None,
+            default_executable_path: None,
+            jvm_arguments: None,
+            launcher_name: None,
+            launcher_version: None,
+            game_directory: None,
+            demo: None,
+            custom_resolution: None,
+            server: None,
+            port: None,
+            natives_directory: None,
+            enable_logging_config: None,
+            disable_multiplayer: None,
+            disable_chat: None,
+            quick_play_path: None,
+            quick_play_singleplayer: None,
+            quick_play_multiplayer: None,
+            quick_play_realms: None,
+        }
+    }
+}
+
+impl Default for MinecraftNewsOptions {
+    fn default() -> Self {
+        MinecraftNewsOptions {
+            page_size: 20,
+        }
+    }
 }
