@@ -1,9 +1,27 @@
 use chrono::Utc;
 use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{collections::HashMap, sync::Mutex};
+use std::{collections::HashMap, path::Path, sync::Mutex};
 
 use crate::types::helper_types::RequestsResponseCache;
+
+pub fn check_path_inside_minecraft_directory(
+    minecraft_directory: impl AsRef<Path>,
+    path: impl AsRef<Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let minecraft_directory = minecraft_directory.as_ref().canonicalize().unwrap();
+    let path = path.as_ref().canonicalize().unwrap();
+
+    if !path.starts_with(&minecraft_directory) {
+        return Err(format!(
+            "{} is outside Minecraft directory {}",
+            path.to_string_lossy(),
+            minecraft_directory.to_string_lossy()
+        )
+        .into());
+    }
+    Ok(())
+}
 
 lazy_static! {
     static ref REQUESTS_RESPONSE_CACHE: Mutex<HashMap<String, RequestsResponseCache>> =
