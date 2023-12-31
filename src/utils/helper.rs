@@ -1,7 +1,15 @@
 use chrono::Utc;
+use crypto::digest::Digest;
+use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{collections::HashMap, path::Path, sync::Mutex};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, Read},
+    path::Path,
+    sync::Mutex,
+};
 
 use crate::types::helper_types::RequestsResponseCache;
 
@@ -65,6 +73,23 @@ pub fn get_requests_response_cache(url: &str) -> Result<Value, reqwest::Error> {
     };
     cache.insert(url.to_string(), cache_entry);
     Ok(res)
+}
+
+pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
+    const BUF_SIZE: usize = 65536;
+    let mut file = File::open(path)?;
+    let mut buffer = [0; BUF_SIZE];
+    let mut sha1 = Sha1::new();
+
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        sha1.input(&buffer[..bytes_read]);
+    }
+
+    Ok(sha1.result_str())
 }
 
 #[cfg(test)]
