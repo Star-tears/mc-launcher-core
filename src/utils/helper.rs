@@ -3,13 +3,7 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
 use serde_json::Value;
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufReader, Read},
-    path::Path,
-    sync::Mutex,
-};
+use std::{collections::HashMap, fs::File, io::Read, path::Path, sync::Mutex};
 
 use crate::types::helper_types::RequestsResponseCache;
 
