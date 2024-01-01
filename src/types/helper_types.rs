@@ -1,11 +1,11 @@
 use chrono::{DateTime, Utc};
-use serde_json::Value;
 
 pub struct RequestsResponseCache {
-    pub response: Value,
+    pub response: String,
     pub datetime: DateTime<Utc>,
 }
 
+#[derive(Debug)]
 pub struct MavenMetadata {
     pub release: String,
     pub latest: String,

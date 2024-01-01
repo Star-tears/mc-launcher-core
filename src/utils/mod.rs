@@ -4,6 +4,7 @@ use std::{env, fs, io};
 
 use chrono::{DateTime, TimeZone, Utc};
 use rand::Rng;
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::shared_types::{ClientJson, VersionListManifestJson};
@@ -42,7 +43,8 @@ pub fn get_latest_version() -> Result<LatestMinecraftVersions, Box<dyn std::erro
     let response = get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
     )?;
-    let latest = response["latest"].clone();
+    let res: Value = serde_json::from_str(&response)?;
+    let latest = res["latest"].clone();
     let release = latest["release"]
         .as_str()
         .ok_or_else(|| "Release version not found".to_string())?;
@@ -60,7 +62,7 @@ pub fn get_version_list() -> Result<Vec<MinecraftVersionInfo>, Box<dyn std::erro
     let response = get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
     )?;
-    let vlist: VersionListManifestJson = serde_json::from_value(response)?;
+    let vlist: VersionListManifestJson = serde_json::from_str(&response)?;
     let mut res = Vec::new();
     for v in vlist.versions {
         res.push(MinecraftVersionInfo {
