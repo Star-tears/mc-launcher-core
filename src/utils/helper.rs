@@ -2,16 +2,11 @@ use chrono::Utc;
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
+use regex::Regex;
 use serde_json::Value;
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{BufReader, Read},
-    path::Path,
-    sync::Mutex,
-};
+use std::{collections::HashMap, fs::File, io::Read, path::Path, sync::Mutex};
 
-use crate::types::helper_types::RequestsResponseCache;
+use crate::types::helper_types::{MavenMetadata, RequestsResponseCache};
 
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
@@ -49,12 +44,12 @@ pub fn get_user_agent() -> String {
     }
 }
 
-pub fn get_requests_response_cache(url: &str) -> Result<Value, reqwest::Error> {
+pub fn get_requests_response_cache(url: &str) -> Result<String, reqwest::Error> {
     let mut cache = REQUESTS_RESPONSE_CACHE.lock().unwrap();
     if let Some(cache_entry) = cache.get(url) {
         let elapsed = Utc::now() - cache_entry.datetime;
         if elapsed.num_seconds() > 3600 {
-            let response: Value = reqwest::blocking::get(url)?.json()?;
+            let response = reqwest::blocking::get(url)?.text()?;
             let res = response.clone();
             let cache_entry = RequestsResponseCache {
                 response,
@@ -65,7 +60,7 @@ pub fn get_requests_response_cache(url: &str) -> Result<Value, reqwest::Error> {
         }
     }
 
-    let response: Value = reqwest::blocking::get(url)?.json()?;
+    let response = reqwest::blocking::get(url)?.text()?;
     let res = response.clone();
     let cache_entry = RequestsResponseCache {
         response,
@@ -73,6 +68,39 @@ pub fn get_requests_response_cache(url: &str) -> Result<Value, reqwest::Error> {
     };
     cache.insert(url.to_string(), cache_entry);
     Ok(res)
+}
+
+pub fn parse_maven_metadata(url: &str) -> Result<MavenMetadata, Box<dyn std::error::Error>> {
+    let response = get_requests_response_cache(url)?;
+
+    let release_regex = Regex::new(r#"<release>(.*?)</release>"#)?;
+    let latest_regex = Regex::new(r#"<latest>(.*?)</latest>"#)?;
+    let version_regex = Regex::new(r#"<version>(.*?)</version>"#)?;
+
+    let release = release_regex
+        .captures(&response)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str()
+        .to_string();
+    let latest = latest_regex
+        .captures(&response)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str()
+        .to_string();
+    let versions: Vec<String> = version_regex
+        .captures_iter(&response)
+        .map(|m| m.get(1).unwrap().as_str().to_string())
+        .collect();
+
+    Ok(MavenMetadata {
+        release,
+        latest,
+        versions,
+    })
 }
 
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
@@ -97,15 +125,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_user_agent() {
+    fn debug_get_user_agent() {
         let user_agent = get_user_agent();
         println!("Now user_agent: {:?}", user_agent);
     }
 
     #[test]
-    fn test_get_requests_response_cache() {
+    fn debug_get_requests_response_cache() {
         if let Ok(response) = get_requests_response_cache("https://httpbin.org/ip") {
             println!("{:#?}", response);
         }
+    }
+
+    #[test]
+    fn debug_parse_maven_metadata() {
+        let url =
+            "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml";
+        // match parse_maven_metadata(url) {
+        //     Ok(res) => println!("{:?}", res),
+        //     Err(e) => println!("{:#?}", e),
+        // }
     }
 }
