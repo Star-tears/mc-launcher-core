@@ -103,7 +103,7 @@ pub fn get_installed_versions(
             id: version_data.id,
             r#type: version_data.r#type,
             release_time,
-            compliance_level: version_data.compliance_level,
+            compliance_level: version_data.compliance_level.unwrap_or_default(),
         };
 
         version_list.push(info);
