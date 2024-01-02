@@ -93,13 +93,6 @@ pub enum StringAndClientJsonArgumentRuleValue {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(untagged)]
-pub enum StringAndClientJsonArgumentRuleValue {
-    StringValue(String),
-    ClientJsonArgumentRuleValue(ClientJsonArgumentRule),
-}
-
-#[derive(Debug, Deserialize)]
 pub struct ClientJson {
     pub id: String,
     pub assets: String,
