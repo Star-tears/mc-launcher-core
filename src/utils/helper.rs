@@ -6,20 +6,20 @@ use regex::Regex;
 use reqwest::blocking::{Client, Response};
 use std::{
     collections::HashMap,
-    env,
     fs::{self, File},
-    io::{self, BufWriter, Read, Write},
+    io::{self, BufWriter, Read},
     path::Path,
-    process::Command,
     sync::Mutex,
 };
 use sysinfo::System;
+use winver::WindowsVersion;
 use xz2::read::XzDecoder;
 
 use crate::types::{
     exceptions_types::InvalidChecksum,
     helper_types::{MavenMetadata, RequestsResponseCache},
-    CallbackDict,
+    shared_types::ClientJsonRule,
+    CallbackDict, MinecraftOptions,
 };
 
 pub fn check_path_inside_minecraft_directory(
@@ -114,6 +114,86 @@ pub fn download_file(
     Ok(true)
 }
 
+fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool {
+    let mut return_value = false;
+
+    if rule.action == "allow" {
+        return_value = false;
+    } else if rule.action == "disallow" {
+        return_value = true;
+    }
+
+    if let Some(os) = &rule.os {
+        if let Some(name) = os.get("name") {
+            if name == "windows" && std::env::consts::OS != "windows" {
+                return return_value;
+            } else if name == "osx" && std::env::consts::OS != "macos" {
+                return return_value;
+            } else if name == "linux" && std::env::consts::OS != "linux" {
+                return return_value;
+            }
+        }
+        if let Some(arch) = os.get("arch") {
+            if let Some(arch_info) = System::cpu_arch() {
+                if arch == "x86" && arch_info != "x86" {
+                    return return_value;
+                }
+            }
+        }
+        if let Some(version) = os.get("version") {
+            let os_version = get_os_version();
+            let re = Regex::new(version).unwrap();
+            if !re.is_match(&os_version) {
+                return return_value;
+            }
+        }
+    }
+
+    if let Some(features) = &rule.features {
+        if let Some(_) = features.get("has_custom_resolution") {
+            if !options.custom_resolution.unwrap_or(false) {
+                return return_value;
+            }
+        }
+        if let Some(_) = features.get("is_demo_user") {
+            if !options.demo.unwrap_or(false) {
+                return return_value;
+            }
+        }
+        if let Some(_) = features.get("has_quick_plays_support") {
+            if options.quick_play_path.is_none() {
+                return return_value;
+            }
+        }
+        if let Some(_) = features.get("is_quick_play_singleplayer") {
+            if options.quick_play_singleplayer.is_none() {
+                return return_value;
+            }
+        }
+        if let Some(_) = features.get("is_quick_play_multiplayer") {
+            if options.quick_play_multiplayer.is_none() {
+                return return_value;
+            }
+        }
+        if let Some(_) = features.get("is_quick_play_realms") {
+            if options.quick_play_realms.is_none() {
+                return return_value;
+            }
+        }
+    }
+
+    !return_value
+}
+
+pub fn parse_rule_list(rules: Vec<ClientJsonRule>, options: MinecraftOptions) -> bool {
+    for i in rules {
+        if !parse_single_rule(&i, &options) {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
     const BUF_SIZE: usize = 65536;
     let mut file = File::open(path)?;
@@ -132,6 +212,10 @@ pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::erro
 }
 
 pub fn get_os_version() -> String {
+    if std::env::consts::OS == "windows" {
+        let version = WindowsVersion::detect().unwrap();
+        return format!("{}.{}", version.major, version.minor);
+    }
     System::os_version().expect("failed get os version")
 }
 
@@ -231,8 +315,8 @@ mod tests {
 
     #[test]
     fn debug_parse_maven_metadata() {
-        let url =
-            "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml";
+        // let url =
+        //     "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml";
         // match parse_maven_metadata(url) {
         //     Ok(res) => println!("{:?}", res),
         //     Err(e) => println!("{:#?}", e),
