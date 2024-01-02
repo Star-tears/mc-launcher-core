@@ -18,7 +18,7 @@ use xz2::read::XzDecoder;
 use crate::types::{
     exceptions_types::InvalidChecksum,
     helper_types::{MavenMetadata, RequestsResponseCache},
-    shared_types::ClientJsonRule,
+    shared_types::{ClientJson, ClientJsonRule},
     CallbackDict, MinecraftOptions,
 };
 
@@ -192,6 +192,31 @@ pub fn parse_rule_list(rules: Vec<ClientJsonRule>, options: MinecraftOptions) ->
         }
     }
     true
+}
+
+pub fn inherit_json(
+    original_data: &ClientJson,
+    path: impl AsRef<Path>,
+) -> Result<ClientJson, Box<dyn std::error::Error>> {
+    let inherit_version = original_data
+        .inherits_from
+        .as_ref()
+        .ok_or("Missing 'inheritsFrom' key")?;
+
+    let mut file_path = path.as_ref().canonicalize()?;
+    file_path.push("versions");
+    file_path.push(inherit_version);
+    file_path.push(format!("{}.json", inherit_version));
+
+    let mut file = File::open(file_path)?;
+    let mut file_content = String::new();
+    file.read_to_string(&mut file_content)?;
+
+    let mut new_data: ClientJson = serde_json::from_str(&file_content)?;
+
+    new_data.merge(original_data);
+
+    Ok(new_data)
 }
 
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
