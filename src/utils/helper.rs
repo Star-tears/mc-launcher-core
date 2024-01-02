@@ -3,8 +3,10 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde_json::Value;
-use std::{collections::HashMap, fs::File, io::Read, path::Path, sync::Mutex};
+use std::{
+    collections::HashMap, env, fs::File, io::Read, path::Path, process::Command, sync::Mutex,
+};
+use sysinfo::System;
 
 use crate::types::helper_types::{MavenMetadata, RequestsResponseCache};
 
@@ -24,6 +26,27 @@ pub fn check_path_inside_minecraft_directory(
         .into());
     }
     Ok(())
+}
+
+pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
+    const BUF_SIZE: usize = 65536;
+    let mut file = File::open(path)?;
+    let mut buffer = [0; BUF_SIZE];
+    let mut sha1 = Sha1::new();
+
+    loop {
+        let bytes_read = file.read(&mut buffer)?;
+        if bytes_read == 0 {
+            break;
+        }
+        sha1.input(&buffer[..bytes_read]);
+    }
+
+    Ok(sha1.result_str())
+}
+
+pub fn get_os_version() -> String {
+    System::os_version().expect("failed get os version")
 }
 
 lazy_static! {
@@ -103,23 +126,6 @@ pub fn parse_maven_metadata(url: &str) -> Result<MavenMetadata, Box<dyn std::err
     })
 }
 
-pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
-    const BUF_SIZE: usize = 65536;
-    let mut file = File::open(path)?;
-    let mut buffer = [0; BUF_SIZE];
-    let mut sha1 = Sha1::new();
-
-    loop {
-        let bytes_read = file.read(&mut buffer)?;
-        if bytes_read == 0 {
-            break;
-        }
-        sha1.input(&buffer[..bytes_read]);
-    }
-
-    Ok(sha1.result_str())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,5 +151,10 @@ mod tests {
         //     Ok(res) => println!("{:?}", res),
         //     Err(e) => println!("{:#?}", e),
         // }
+    }
+
+    #[test]
+    fn debug_get_os_version() {
+        println!("{}", get_os_version());
     }
 }
