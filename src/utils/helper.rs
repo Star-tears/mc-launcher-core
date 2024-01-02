@@ -3,12 +3,24 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
 use regex::Regex;
+use reqwest::blocking::{Client, Response};
 use std::{
-    collections::HashMap, env, fs::File, io::Read, path::Path, process::Command, sync::Mutex,
+    collections::HashMap,
+    env,
+    fs::{self, File},
+    io::{self, BufWriter, Read, Write},
+    path::Path,
+    process::Command,
+    sync::Mutex,
 };
 use sysinfo::System;
+use xz2::read::XzDecoder;
 
-use crate::types::helper_types::{MavenMetadata, RequestsResponseCache};
+use crate::types::{
+    exceptions_types::InvalidChecksum,
+    helper_types::{MavenMetadata, RequestsResponseCache},
+    CallbackDict,
+};
 
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
@@ -26,6 +38,80 @@ pub fn check_path_inside_minecraft_directory(
         .into());
     }
     Ok(())
+}
+
+pub fn download_file(
+    url: &str,
+    path: &str,
+    sha1: Option<&str>,
+    lzma_compressed: bool,
+    minecraft_directory: Option<&str>,
+    session: Option<reqwest::blocking::Client>,
+    callback: CallbackDict,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    if let Some(mc_dir) = minecraft_directory {
+        check_path_inside_minecraft_directory(mc_dir, path)?;
+    }
+
+    if Path::new(path).is_file() {
+        match sha1 {
+            Some(expected_sha1) => {
+                let actual_sha1 = get_sha1_hash(path)?;
+                if actual_sha1 == expected_sha1 {
+                    return Ok(false);
+                }
+            }
+            None => return Ok(false),
+        }
+    }
+
+    if let Some(parent_dir) = Path::new(path).parent() {
+        if let Err(err) = fs::create_dir_all(parent_dir) {
+            eprintln!("Error creating directories: {}", err);
+        }
+    }
+
+    if let Some(set_status) = callback.set_status {
+        if let Some(file_name) = Path::new(path).file_name() {
+            if let Some(file_name_str) = file_name.to_str() {
+                set_status(format!("Download {}", file_name_str));
+            }
+        }
+    }
+    let mut response: Response;
+    if session.is_none() {
+        let client = Client::builder()
+            .user_agent(get_user_agent()) // 设置 User-Agent
+            .build()?;
+        response = client.get(url).send()?;
+    } else {
+        response = Client::new().get(url).send()?;
+    }
+
+    if !response.status().is_success() {
+        return Ok(false);
+    }
+    let mut file = BufWriter::new(File::create(path)?);
+    if lzma_compressed {
+        let mut decoder = XzDecoder::new(response);
+        io::copy(&mut decoder, &mut file)?;
+    } else {
+        io::copy(&mut response, &mut file)?;
+    }
+
+    if let Some(expected_sha1) = sha1 {
+        let actual_sha1 = get_sha1_hash(path)?;
+        if actual_sha1 != expected_sha1 {
+            return Err(Box::new(InvalidChecksum {
+                url: url.to_string(),
+                path: path.to_string(),
+                expected: expected_sha1.to_string(),
+                actual: actual_sha1,
+            }));
+        }
+    }
+
+    Ok(true)
 }
 
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {

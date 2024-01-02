@@ -9,6 +9,7 @@ pub mod mrpack_types;
 pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
+pub mod exceptions_types;
 
 #[derive(Debug, Default)]
 pub struct MinecraftOptions {
