@@ -717,30 +717,18 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-<<<<<<< HEAD
-version = "1.0.74"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2de98502f212cfcea8d0bb305bd0f49d7ebdd75b64ba0a68f937d888f4e0d6db"
-=======
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dd5e8a1f1029c43224ad5898e50140c2aebb1705f19e67c918ebf5b9e797fe1"
->>>>>>> dev
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-<<<<<<< HEAD
-version = "1.0.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "291ec9ab5efd934aaf503a6466c5d5251535d108ee747472c3977cc5acc868ef"
-=======
 version = "1.0.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22a37c9326af5ed140c86a46655b5278de879853be5573c01df185b6f49a580a"
->>>>>>> dev
 dependencies = [
  "proc-macro2",
 ]
@@ -1016,15 +1004,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-<<<<<<< HEAD
-version = "1.0.110"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fbd975230bada99c8bb618e0c365c2eefa219158d5c6c29610fd09ff1833257"
-=======
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb0652c533506ad7a2e353cce269330d6afd8bdfb6d75e0ace5b35aacbd7b9e9"
->>>>>>> dev
 dependencies = [
  "itoa",
  "ryu",
@@ -1064,15 +1046,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-<<<<<<< HEAD
-version = "2.0.46"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89456b690ff72fddcecf231caedbe615c59480c93358a93dfae7fc29e3ebbf0e"
-=======
 version = "2.0.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "92d27c2c202598d05175a6dd3af46824b7f747f8d8e9b14c623f19fa5069735d"
->>>>>>> dev
 dependencies = [
  "proc-macro2",
  "quote",
