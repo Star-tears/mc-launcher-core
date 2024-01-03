@@ -482,9 +482,9 @@ mod tests {
 
     #[test]
     fn debug_get_client_json() {
-        match get_client_json("1.19", r"H:\mc\mc-launcher-core\test\.minecraft") {
-            Ok(client_json) => println!("{:#?}", client_json),
-            Err(e) => println!("{}", e.to_string()),
-        }
+        // match get_client_json("1.19", r"H:\mc\mc-launcher-core\test\.minecraft") {
+        //     Ok(client_json) => println!("{:#?}", client_json),
+        //     Err(e) => println!("{}", e.to_string()),
+        // }
     }
 }
