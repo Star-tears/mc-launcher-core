@@ -19,7 +19,7 @@ use zip::ZipArchive;
 use crate::types::{
     exceptions_types::InvalidChecksum,
     helper_types::{MavenMetadata, RequestsResponseCache},
-    shared_types::{ClientJson, ClientJsonRule},
+    shared_types::{ClientJson, ClientJsonRule, VersionListManifestJson},
     CallbackDict, MinecraftOptions,
 };
 
@@ -342,6 +342,14 @@ pub fn get_requests_response_cache(url: &str) -> Result<String, reqwest::Error> 
     Ok(res)
 }
 
+pub fn get_classpath_separator() -> String {
+    if std::env::consts::OS == "windows" {
+        ";".to_string()
+    } else {
+        ":".to_string()
+    }
+}
+
 pub fn parse_maven_metadata(url: &str) -> Result<MavenMetadata, Box<dyn std::error::Error>> {
     let response = get_requests_response_cache(url)?;
 
@@ -373,6 +381,61 @@ pub fn parse_maven_metadata(url: &str) -> Result<MavenMetadata, Box<dyn std::err
         latest,
         versions,
     })
+}
+
+pub fn extract_file_from_zip(
+    handler: &mut zip::ZipArchive<std::fs::File>,
+    zip_path: &str,
+    extract_path: &str,
+    minecraft_directory: Option<&Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(minecraft_directory) = minecraft_directory {
+        check_path_inside_minecraft_directory(minecraft_directory, extract_path)?;
+    }
+
+    if let Some(parent) = Path::new(extract_path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+
+    let mut file = fs::File::create(extract_path)?;
+    let mut zip_file = handler.by_name(zip_path)?;
+    io::copy(&mut zip_file, &mut file)?;
+
+    Ok(())
+}
+
+pub fn get_client_json(
+    version: &str,
+    minecraft_directory: impl AsRef<Path>,
+) -> Result<ClientJson, Box<dyn std::error::Error>> {
+    let local_path = minecraft_directory
+        .as_ref()
+        .join("versions")
+        .join(version)
+        .join(format!("{}.json", version));
+    if local_path.exists() {
+        let file = fs::File::open(&local_path)?;
+        let data: ClientJson = serde_json::from_reader(file)?;
+
+        if data.inherits_from.is_some() {
+            let inherited_data = inherit_json(&data, minecraft_directory.as_ref())?;
+            return Ok(inherited_data);
+        }
+
+        return Ok(data);
+    }
+
+    let version_manifest_url = "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json";
+    let version_manifest: VersionListManifestJson =
+        serde_json::from_str(get_requests_response_cache(version_manifest_url)?.as_str())?;
+    if let Some(version_info) = version_manifest.versions.iter().find(|&v| v.id == version) {
+        let version_url = &version_info.url;
+        let version_data: ClientJson =
+            serde_json::from_str(get_requests_response_cache(version_url)?.as_str())?;
+        return Ok(version_data);
+    }
+
+    Err(format!("version is not found: {}", version).into())
 }
 
 #[cfg(test)]
@@ -413,6 +476,14 @@ mod tests {
         //     r"H:\mc\mc-launcher-core\test\.minecraft\versions\DarkRPG FORGE - RPG, Quest, Magic, Dark Souls\DarkRPG FORGE - RPG, Quest, Magic, Dark Souls.jar",
         // ) {
         //     Ok(s) => println!("jar mainclass: {}", s),
+        //     Err(e) => println!("{}", e.to_string()),
+        // }
+    }
+
+    #[test]
+    fn debug_get_client_json() {
+        // match get_client_json("1.19", r"H:\mc\mc-launcher-core\test\.minecraft") {
+        //     Ok(client_json) => println!("{:#?}", client_json),
         //     Err(e) => println!("{}", e.to_string()),
         // }
     }
