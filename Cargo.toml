@@ -25,6 +25,7 @@ sysinfo = "0.30.3"
 which = "5.0.0"
 winver = "1.0.0"
 xz2 = "0.1.7"
+zip = "0.6.6"
 
 [dependencies.uuid]
 version = "1.6.1"
