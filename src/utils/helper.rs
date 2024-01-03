@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     fs::{self, File},
     io::{self, BufWriter, Read},
-    path::Path,
+    path::{Path, PathBuf},
     sync::Mutex,
 };
 use sysinfo::System;
@@ -217,6 +217,34 @@ pub fn inherit_json(
     new_data.merge(original_data);
 
     Ok(new_data)
+}
+
+pub fn get_library_path(name: &str, path: impl AsRef<Path>) -> PathBuf {
+    let mut libpath = path.as_ref().join("libraries");
+    let parts: Vec<&str> = name.split(":").collect();
+    let (base_path, libname, version) = match &parts[..3] {
+        [base_path, libname, version] => (base_path, libname, version),
+        _ => panic!("无效的库名称格式"),
+    };
+    for i in base_path.split('.') {
+        libpath = libpath.join(i);
+    }
+    let (version, fileend) = match version.split_once('@') {
+        Some((version, fileend)) => (version, fileend),
+        None => ("", "jar"),
+    };
+    let filename = format!(
+        "{}-{}{}.{}",
+        libname,
+        version,
+        parts
+            .iter()
+            .skip(3)
+            .map(|p| format!("-{}", p))
+            .collect::<String>(),
+        fileend
+    );
+    libpath.join(libname).join(version).join(filename)
 }
 
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
