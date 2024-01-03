@@ -14,6 +14,7 @@ use std::{
 use sysinfo::System;
 use winver::WindowsVersion;
 use xz2::read::XzDecoder;
+use zip::ZipArchive;
 
 use crate::types::{
     exceptions_types::InvalidChecksum,
@@ -247,6 +248,31 @@ pub fn get_library_path(name: &str, path: impl AsRef<Path>) -> PathBuf {
     libpath.join(libname).join(version).join(filename)
 }
 
+pub fn get_jar_mainclass(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let mut archive = ZipArchive::new(file)?;
+    let mut manifest = String::new();
+
+    // Read the MANIFEST.MF file from the JAR
+    for i in 0..archive.len() {
+        let mut entry = archive.by_index(i)?;
+        if entry.name().eq_ignore_ascii_case("META-INF/MANIFEST.MF") {
+            entry.read_to_string(&mut manifest)?;
+            break;
+        }
+    }
+
+    // Parse the MANIFEST.MF content to find the Main-Class
+    let main_class = manifest
+        .lines()
+        .find(|line| line.starts_with("Main-Class:"))
+        .and_then(|line| line.split(':').nth(1))
+        .map(|s| s.trim())
+        .ok_or("Main-Class not found in MANIFEST.MF")?;
+
+    Ok(main_class.to_string())
+}
+
 pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::error::Error>> {
     const BUF_SIZE: usize = 65536;
     let mut file = File::open(path)?;
@@ -379,5 +405,15 @@ mod tests {
     #[test]
     fn debug_get_os_version() {
         println!("{}", get_os_version());
+    }
+
+    #[test]
+    fn debug_get_jar_mainclass() {
+        // match get_jar_mainclass(
+        //     r"H:\mc\mc-launcher-core\test\.minecraft\versions\DarkRPG FORGE - RPG, Quest, Magic, Dark Souls\DarkRPG FORGE - RPG, Quest, Magic, Dark Souls.jar",
+        // ) {
+        //     Ok(s) => println!("jar mainclass: {}", s),
+        //     Err(e) => println!("{}", e.to_string()),
+        // }
     }
 }
