@@ -16,6 +16,7 @@ use self::helper::get_requests_response_cache;
 
 pub mod helper;
 pub mod java;
+pub mod natives;
 
 pub fn get_minecraft_directory() -> PathBuf {
     let os = env::consts::OS;
