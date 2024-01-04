@@ -64,8 +64,10 @@ pub struct ClientJsonLibraryDownloads {
 pub struct ClientJsonLibrary {
     pub name: String,
     pub downloads: Option<ClientJsonLibraryDownloads>,
+    /// keys: {"exclude"}
     pub extract: Option<HashMap<String, Vec<String>>>,
     pub rules: Option<Vec<ClientJsonRule>>,
+    /// keys: {"linux", "osx", "windows"}
     pub natives: Option<HashMap<String, String>>,
     pub url: Option<String>,
 }
