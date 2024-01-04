@@ -3,7 +3,12 @@ use std::{collections::HashMap, fs, io, path::Path};
 use sysinfo::System;
 use zip::ZipArchive;
 
-use crate::types::shared_types::ClientJsonLibrary;
+use crate::types::{
+    shared_types::{ClientJson, ClientJsonLibrary},
+    MinecraftOptions,
+};
+
+use super::helper::{get_library_path, inherit_json, parse_rule_list};
 
 pub fn get_natives(data: &ClientJsonLibrary) -> String {
     let arch_type = if System::cpu_arch().unwrap_or_default() == "x86" {
@@ -29,7 +34,7 @@ pub fn get_natives(data: &ClientJsonLibrary) -> String {
 
 pub fn extract_natives_file(
     filename: &str,
-    extract_path: &str,
+    extract_path: impl AsRef<Path>,
     extract_data: &HashMap<String, Vec<String>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 如果提取目录不存在，则创建
@@ -54,9 +59,79 @@ pub fn extract_natives_file(
 
         // 如果不应排除文件，则提取文件
         if !should_exclude {
-            let mut output_file = fs::File::create(Path::new(extract_path).join(file.name()))?;
+            let mut output_file =
+                fs::File::create(Path::new(extract_path.as_ref()).join(file.name()))?;
             io::copy(&mut file, &mut output_file)?;
         }
+    }
+
+    Ok(())
+}
+
+pub fn extract_natives(
+    versionid: &str,
+    path: impl AsRef<Path>,
+    extract_path: impl AsRef<Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let version_file_path = path
+        .as_ref()
+        .join("versions")
+        .join(versionid)
+        .join(format!("{}.json", versionid));
+
+    if !version_file_path.exists() {
+        return Err(format!("version is not found: {}", versionid).into());
+    }
+
+    let json_content = fs::read_to_string(&version_file_path)?;
+    let mut data: ClientJson = serde_json::from_str(&json_content)?;
+
+    if data.inherits_from.is_some() {
+        data = inherit_json(&data, &path)?;
+    }
+
+    for library in &data.libraries {
+        if let Some(rules) = &library.rules {
+            if !parse_rule_list(rules.to_vec(), MinecraftOptions::default()) {
+                continue;
+            }
+        }
+
+        let current_path = get_library_path(&library.name, &path);
+        let native = get_natives(&library);
+
+        if native.is_empty() {
+            continue;
+        }
+
+        // 获取目录路径
+        let lib_path = current_path.parent().unwrap_or_else(|| Path::new(""));
+        let file_name = current_path
+            .file_name()
+            .and_then(|f| f.to_str())
+            .unwrap_or("");
+        let lib_path_with_filename = lib_path.join(file_name);
+
+        // 获取文件扩展名
+        let extension = current_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        let native_library_filename = format!(
+            "{}-{}{}",
+            lib_path_with_filename.to_string_lossy(),
+            native,
+            extension
+        );
+
+        extract_natives_file(
+            &native_library_filename,
+            &extract_path,
+            library
+                .extract
+                .as_ref()
+                .map_or(&HashMap::from([("exclude".to_string(), Vec::new())]), |e| e),
+        )?;
     }
 
     Ok(())
