@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs, path::Path};
 
 use reqwest::header;
 use serde_json::Value;
@@ -40,6 +40,16 @@ pub fn get_jvm_runtimes() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         }
     } else {
         Err("Platform not found in manifest".into())
+    }
+}
+
+pub fn get_installed_jvm_runtimes(minecraft_directory: impl AsRef<Path>) -> Vec<String> {
+    let runtime_dir = minecraft_directory.as_ref().join("runtime");
+    match fs::read_dir(runtime_dir) {
+        Ok(entries) => entries
+            .filter_map(|entry| entry.ok().and_then(|e| e.file_name().into_string().ok()))
+            .collect(),
+        Err(_) => Vec::new(),
     }
 }
 
