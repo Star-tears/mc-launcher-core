@@ -3,7 +3,10 @@ use std::{env, fs, path::Path};
 use reqwest::header;
 use serde_json::Value;
 
-use crate::utils::helper::get_user_agent;
+use crate::{
+    types::{runtime_types::RuntimeListJson, CallbackDict},
+    utils::helper::get_user_agent,
+};
 
 const JVM_MANIFEST_URL: &str = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
 
@@ -29,15 +32,11 @@ pub fn get_jvm_runtimes() -> Result<Vec<String>, Box<dyn std::error::Error>> {
         .get(JVM_MANIFEST_URL)
         .header(header::USER_AGENT, get_user_agent())
         .send()?;
-    let manifest_data: Value = response.json()?;
+    let manifest_data: RuntimeListJson = response.json()?;
     let platform_string = get_jvm_platform_string();
-    if let Some(platform_data) = manifest_data.get(platform_string) {
-        if let Some(platform_map) = platform_data.as_object() {
-            let jvm_list: Vec<String> = platform_map.keys().cloned().collect();
-            Ok(jvm_list)
-        } else {
-            Err("Invalid JSON format".into())
-        }
+    if let Some(platform_data) = manifest_data.get(&platform_string) {
+        let jvm_list: Vec<String> = platform_data.keys().cloned().collect();
+        Ok(jvm_list)
     } else {
         Err("Platform not found in manifest".into())
     }
@@ -51,6 +50,20 @@ pub fn get_installed_jvm_runtimes(minecraft_directory: impl AsRef<Path>) -> Vec<
             .collect(),
         Err(_) => Vec::new(),
     }
+}
+
+pub fn install_jvm_runtime(
+    jvm_version: &str,
+    minecraft_directory: impl AsRef<Path>,
+    callback: CallbackDict,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .get(JVM_MANIFEST_URL)
+        .header(header::USER_AGENT, get_user_agent())
+        .send()?;
+    let manifest_data: RuntimeListJson = response.json()?;
+    todo!()
 }
 
 #[cfg(test)]
