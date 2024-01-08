@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
+pub mod exceptions_types;
 pub mod forge_types;
 pub mod helper_types;
 pub mod install_types;
@@ -9,7 +10,6 @@ pub mod mrpack_types;
 pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
-pub mod exceptions_types;
 
 #[derive(Debug, Default)]
 pub struct MinecraftOptions {
@@ -38,6 +38,7 @@ pub struct MinecraftOptions {
     pub quick_play_realms: Option<String>,
 }
 
+#[derive(Clone, Copy)]
 pub struct CallbackDict {
     pub set_status: Option<fn(String)>,
     pub set_progress: Option<fn(i32)>,
@@ -239,8 +240,6 @@ impl MinecraftOptions {
 
 impl Default for MinecraftNewsOptions {
     fn default() -> Self {
-        MinecraftNewsOptions {
-            page_size: 20,
-        }
+        MinecraftNewsOptions { page_size: 20 }
     }
 }

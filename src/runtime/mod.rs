@@ -1,11 +1,13 @@
-use std::{env, fs, path::Path};
+use std::{collections::HashMap, env, fs, path::Path, process::Command};
 
 use reqwest::header;
-use serde_json::Value;
 
 use crate::{
-    types::{runtime_types::RuntimeListJson, CallbackDict},
-    utils::helper::get_user_agent,
+    types::{
+        runtime_types::{PlatformManifestJson, RuntimeListJson},
+        CallbackDict,
+    },
+    utils::helper::{check_path_inside_minecraft_directory, download_file, get_user_agent},
 };
 
 const JVM_MANIFEST_URL: &str = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
@@ -58,11 +60,105 @@ pub fn install_jvm_runtime(
     callback: CallbackDict,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::blocking::Client::new();
-    let response = client
+    let manifest_data: RuntimeListJson = client
         .get(JVM_MANIFEST_URL)
         .header(header::USER_AGENT, get_user_agent())
-        .send()?;
-    let manifest_data: RuntimeListJson = response.json()?;
+        .send()?
+        .json()?;
+    let platform_string = get_jvm_platform_string();
+
+    // Check if the JVM version exists
+    if !manifest_data
+        .get(&platform_string)
+        .unwrap_or(&HashMap::new())
+        .contains_key(jvm_version)
+    {
+        return Err(format!("jvm version not found: {}", jvm_version).into());
+    }
+
+    // Check if there is a platform manifest
+    if manifest_data
+        .get(&platform_string)
+        .unwrap_or(&HashMap::new())
+        .get(jvm_version)
+        .unwrap_or(&Vec::new())
+        .len()
+        == 0
+    {
+        return Err("platform manifest not exist.".into());
+    }
+    let platform_manifest_url = manifest_data
+        .get(&platform_string)
+        .unwrap()
+        .get(jvm_version)
+        .unwrap()[0]
+        .manifest
+        .url
+        .clone();
+    let platform_manifest: PlatformManifestJson = client
+        .get(platform_manifest_url)
+        .header(header::USER_AGENT, get_user_agent())
+        .send()?
+        .json()?;
+    let base_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(platform_string)
+        .join(jvm_version);
+
+    // Download all files of the runtime
+    if let Some(set_max) = callback.set_max {
+        set_max(platform_manifest.files.len() as i32 - 1);
+    }
+    let mut count = 0;
+    let mut file_list: Vec<&String> = vec![];
+    for (key, value) in platform_manifest.files.iter() {
+        let current_path = base_path.clone().join(key);
+        check_path_inside_minecraft_directory(&minecraft_directory, &current_path);
+        if let Some(vtype) = &value.r#type {
+            if vtype == "file" {
+                if let Some(download_info) = &value.downloads {
+                    if download_info.contains_key("lzma") {
+                        download_file(
+                            &download_info.get("lzma").unwrap().url,
+                            &current_path,
+                            Some(download_info.get("raw").unwrap().sha1.as_str()),
+                            true,
+                            None,
+                            Some(&client),
+                            callback.clone(),
+                        )?;
+                    } else {
+                        download_file(
+                            &download_info.get("raw").unwrap().url,
+                            &current_path,
+                            Some(download_info.get("raw").unwrap().sha1.as_str()),
+                            false,
+                            None,
+                            Some(&client),
+                            callback.clone(),
+                        )?;
+                    }
+                }
+                //Make files executable on unix systems
+                if value.executable == Some(true) {
+                    let _ = Command::new("chmod").arg("+x").arg(current_path).status();
+                }
+                file_list.push(key);
+            } else if vtype == "directory" {
+                let _ = fs::create_dir_all(&current_path);
+            } else if vtype == "link" {
+                check_path_inside_minecraft_directory(
+                    &minecraft_directory,
+                    base_path
+                        .clone()
+                        .join(&value.target.as_ref().map_or("".to_string(), |s| s.clone())),
+                );
+                todo!()
+            }
+        }
+    }
     todo!()
 }
 

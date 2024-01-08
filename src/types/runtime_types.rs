@@ -29,11 +29,14 @@ pub struct PlatformManifestJsonFileDownloads {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlatformManifestJsonFile {
     /// keys: {lzma, raw}
-    pub downloads: HashMap<String, PlatformManifestJsonFileDownloads>,
+    pub downloads: Option<HashMap<String, PlatformManifestJsonFileDownloads>>,
     /// keys: {file, direactory, link}
-    pub r#type: String,
-    pub executable: bool,
-    pub target: String,
+    pub r#type: Option<String>,
+    pub executable: Option<bool>,
+    pub target: Option<String>,
 }
 
-type PlatformManifestJson = HashMap<String, PlatformManifestJsonFile>;
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PlatformManifestJson {
+    pub files: HashMap<String, PlatformManifestJsonFile>,
+}
