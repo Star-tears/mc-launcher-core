@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
+pub mod exceptions_types;
 pub mod forge_types;
 pub mod helper_types;
 pub mod install_types;
@@ -9,13 +10,12 @@ pub mod mrpack_types;
 pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
-pub mod exceptions_types;
 
 #[derive(Debug, Default)]
 pub struct MinecraftOptions {
-    pub username: String,
-    pub uuid: String,
-    pub token: String,
+    pub username: Option<String>,
+    pub uuid: Option<String>,
+    pub token: Option<String>,
     pub executable_path: Option<String>,
     pub default_executable_path: Option<String>,
     pub jvm_arguments: Option<Vec<String>>,
@@ -38,6 +38,7 @@ pub struct MinecraftOptions {
     pub quick_play_realms: Option<String>,
 }
 
+#[derive(Clone, Copy)]
 pub struct CallbackDict {
     pub set_status: Option<fn(String)>,
     pub set_progress: Option<fn(i32)>,
@@ -92,9 +93,9 @@ pub struct MinecraftNewsOptions {
 
 #[derive(Debug, Deserialize)]
 pub struct Image {
-    pub content_type: String,
+    pub content_type: Option<String>,
     #[serde(rename = "imageURL")]
-    pub image_url: String,
+    pub image_url: Option<String>,
     pub alt: Option<String>,
     #[serde(rename = "videoURL")]
     pub video_url: Option<String>,
@@ -119,7 +120,8 @@ pub struct Tile {
 #[derive(Debug, Deserialize)]
 pub struct Article {
     pub default_tile: Tile,
-    pub article_lang: Option<String>,
+    #[serde(rename = "articleLang")]
+    pub article_lang: String,
     pub primary_category: String,
     pub categories: Vec<String>,
     pub article_url: String,
@@ -147,18 +149,25 @@ pub struct JavaInformation {
 }
 
 // vanilla_launcher
+#[derive(Debug, Deserialize)]
 pub struct VanillaLauncherProfileResolution {
     pub height: i32,
     pub width: i32,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct VanillaLauncherProfile {
-    pub name: String,
+    pub name: Option<String>,
     pub version: Option<String>,
-    pub version_type: String,
+    #[serde(rename = "versionType")]
+    pub version_type: Option<String>,
+    #[serde(rename = "gameDirectory")]
     pub game_directory: Option<String>,
+    #[serde(rename = "javaExecutable")]
     pub java_executable: Option<String>,
+    #[serde(rename = "javaArguments")]
     pub java_arguments: Option<Vec<String>>,
+    #[serde(rename = "customResolution")]
     pub custom_resolution: Option<VanillaLauncherProfileResolution>,
 }
 
@@ -173,14 +182,19 @@ pub struct MrpackInformation {
 }
 
 pub struct MrpackInstallOptions {
-    pub optional_files: Vec<String>,
-    pub skip_dependencies_install: bool,
+    pub optional_files: Option<Vec<String>>,
+    pub skip_dependencies_install: Option<bool>,
 }
 
 // runtime
 pub struct JvmRuntimeInformation {
     pub name: String,
     pub released: DateTime<Utc>,
+}
+
+pub struct VersionRuntimeInformation {
+    pub name: String,
+    pub java_major_version: i32,
 }
 
 // impl
@@ -210,9 +224,9 @@ impl JavaInformation {
 impl MinecraftOptions {
     pub fn new(username: String, uuid: String, token: String) -> Self {
         Self {
-            username,
-            uuid,
-            token,
+            username: Some(username),
+            uuid: Some(uuid),
+            token: Some(token),
             resolution_width: None,
             resolution_height: None,
             executable_path: None,
@@ -239,8 +253,6 @@ impl MinecraftOptions {
 
 impl Default for MinecraftNewsOptions {
     fn default() -> Self {
-        MinecraftNewsOptions {
-            page_size: 20,
-        }
+        MinecraftNewsOptions { page_size: 20 }
     }
 }

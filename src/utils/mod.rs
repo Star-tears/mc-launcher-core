@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::{env, fs, io};
+use std::{env, fs};
 
 use chrono::{DateTime, TimeZone, Utc};
 use rand::Rng;
@@ -82,8 +82,7 @@ pub fn get_installed_versions(
     let versions_path = minecraft_directory.as_ref().join("versions");
     let dir_list = match fs::read_dir(versions_path) {
         Ok(dir) => dir,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(vec![]),
-        Err(e) => return Err(Box::new(e)),
+        Err(_) => return Ok(vec![]),
     };
     let mut version_list = Vec::new();
     for entry in dir_list {
@@ -96,13 +95,15 @@ pub fn get_installed_versions(
         }
         let file_content = fs::read_to_string(&path)?;
         let version_data: ClientJson = serde_json::from_str(file_content.as_str())?;
-        let release_time = match DateTime::parse_from_rfc3339(&version_data.release_time) {
+        let release_time = match DateTime::parse_from_rfc3339(
+            &version_data.release_time.unwrap_or("0".to_string()),
+        ) {
             Ok(time) => time.with_timezone(&Utc),
             Err(_) => Utc.timestamp_opt(0, 0).unwrap(),
         };
         let info = MinecraftVersionInfo {
-            id: version_data.id,
-            r#type: version_data.r#type,
+            id: version_data.id.unwrap_or_default(),
+            r#type: version_data.r#type.unwrap_or_default(),
             release_time,
             compliance_level: version_data.compliance_level.unwrap_or_default(),
         };
