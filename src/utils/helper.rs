@@ -49,7 +49,7 @@ pub fn download_file(
     lzma_compressed: bool,
     minecraft_directory: Option<&str>,
     session: Option<&reqwest::blocking::Client>,
-    callback: CallbackDict,
+    callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if let Some(mc_dir) = minecraft_directory {
         check_path_inside_minecraft_directory(mc_dir, &path);
@@ -69,9 +69,7 @@ pub fn download_file(
     }
 
     if let Some(parent_dir) = Path::new(&path_string).parent() {
-        if let Err(err) = fs::create_dir_all(parent_dir) {
-            eprintln!("Error creating directories: {}", err);
-        }
+        let _ = fs::create_dir_all(parent_dir);
     }
 
     if let Some(set_status) = callback.set_status {
@@ -399,7 +397,7 @@ pub fn extract_file_from_zip(
     }
 
     if let Some(parent) = Path::new(extract_path).parent() {
-        fs::create_dir_all(parent)?;
+        let _ = fs::create_dir_all(parent);
     }
 
     let mut file = fs::File::create(extract_path)?;

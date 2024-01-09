@@ -59,7 +59,7 @@ pub fn get_installed_jvm_runtimes(minecraft_directory: impl AsRef<Path>) -> Vec<
 pub fn install_jvm_runtime(
     jvm_version: &str,
     minecraft_directory: impl AsRef<Path>,
-    callback: CallbackDict,
+    callback: &CallbackDict,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::blocking::Client::new();
     let manifest_data: RuntimeListJson = client
@@ -129,7 +129,7 @@ pub fn install_jvm_runtime(
                             true,
                             None,
                             Some(&client),
-                            callback.clone(),
+                            callback,
                         )?;
                     } else {
                         download_file(
@@ -139,7 +139,7 @@ pub fn install_jvm_runtime(
                             false,
                             None,
                             Some(&client),
-                            callback.clone(),
+                            callback,
                         )?;
                     }
                 }
