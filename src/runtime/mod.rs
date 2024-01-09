@@ -1,14 +1,22 @@
-use std::{collections::HashMap, env, fs, io::Write, path::Path, process::Command};
+use std::{
+    collections::HashMap,
+    env, fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
+use chrono::DateTime;
 use reqwest::header;
 
 use crate::{
     types::{
         runtime_types::{PlatformManifestJson, RuntimeListJson},
-        CallbackDict,
+        CallbackDict, JvmRuntimeInformation, VersionRuntimeInformation,
     },
     utils::helper::{
-        check_path_inside_minecraft_directory, download_file, get_sha1_hash, get_user_agent,
+        check_path_inside_minecraft_directory, download_file, get_client_json, get_sha1_hash,
+        get_user_agent,
     },
 };
 
@@ -208,6 +216,112 @@ pub fn install_jvm_runtime(
         sha1_file.write_all(format!("{} /#// {} {}\n", file, sha1, ctime).as_bytes())?;
     }
     Ok(())
+}
+
+pub fn get_executable_path(
+    jvm_version: &str,
+    minecraft_directory: impl AsRef<Path>,
+) -> Option<PathBuf> {
+    let java_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(get_jvm_platform_string())
+        .join(jvm_version)
+        .join("bin")
+        .join("java");
+
+    if java_path.is_file() {
+        return Some(java_path);
+    }
+
+    let java_exe_path = java_path.with_extension("exe");
+    if java_exe_path.is_file() {
+        return Some(java_exe_path);
+    }
+
+    let java_alternate_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(get_jvm_platform_string())
+        .join(jvm_version)
+        .join("jre.bundle")
+        .join("Contents")
+        .join("Home")
+        .join("bin")
+        .join("java");
+
+    if java_alternate_path.is_file() {
+        return Some(java_alternate_path);
+    }
+
+    None
+}
+
+pub fn get_jvm_runtime_information(
+    jvm_version: &str,
+) -> Result<JvmRuntimeInformation, Box<dyn std::error::Error>> {
+    let client = reqwest::blocking::Client::new();
+    let manifest_data: RuntimeListJson = client
+        .get(JVM_MANIFEST_URL)
+        .header("user-agent", get_user_agent())
+        .send()?
+        .json()?;
+
+    let platform_string = get_jvm_platform_string();
+
+    // Check if the jvm version exists
+    if !manifest_data
+        .get(&platform_string)
+        .unwrap_or(&HashMap::new())
+        .contains_key(jvm_version)
+    {
+        return Err(format!("jvm version is not found: {}", jvm_version).into());
+    }
+
+    if manifest_data
+        .get(&platform_string)
+        .unwrap()
+        .get(jvm_version)
+        .unwrap_or(&Vec::new())
+        .is_empty()
+    {
+        return Err(format!("this platform not supported yet.").into());
+    }
+    let runtime_list_json_entry = manifest_data
+        .get(&platform_string)
+        .unwrap()
+        .get(jvm_version)
+        .unwrap();
+    Ok(JvmRuntimeInformation {
+        name: runtime_list_json_entry[0]
+            .version
+            .get("name")
+            .unwrap()
+            .to_string(),
+        released: DateTime::parse_from_rfc3339(
+            runtime_list_json_entry[0].version.get("released").unwrap(),
+        )?
+        .into(),
+    })
+}
+
+pub fn get_version_runtime_information(
+    version: &str,
+    minecraft_directory: impl AsRef<Path>,
+) -> Option<VersionRuntimeInformation> {
+    let data = match get_client_json(version, &minecraft_directory) {
+        Ok(json_data) => json_data,
+        Err(_) => return None,
+    };
+    if data.java_version.is_none() {
+        return None;
+    }
+    Some(VersionRuntimeInformation {
+        name: data.java_version.clone().unwrap().component,
+        java_major_version: data.java_version.clone().unwrap().major_version,
+    })
 }
 
 #[cfg(test)]

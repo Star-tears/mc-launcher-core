@@ -192,6 +192,11 @@ pub struct JvmRuntimeInformation {
     pub released: DateTime<Utc>,
 }
 
+pub struct VersionRuntimeInformation {
+    pub name: String,
+    pub java_major_version: i32,
+}
+
 // impl
 impl JavaInformation {
     pub fn new(
