@@ -12,10 +12,11 @@ use reqwest::header;
 use crate::{
     types::{
         runtime_types::{PlatformManifestJson, RuntimeListJson},
-        CallbackDict, JvmRuntimeInformation,
+        CallbackDict, JvmRuntimeInformation, VersionRuntimeInformation,
     },
     utils::helper::{
-        check_path_inside_minecraft_directory, download_file, get_sha1_hash, get_user_agent,
+        check_path_inside_minecraft_directory, download_file, get_client_json, get_sha1_hash,
+        get_user_agent,
     },
 };
 
@@ -303,6 +304,23 @@ pub fn get_jvm_runtime_information(
             runtime_list_json_entry[0].version.get("released").unwrap(),
         )?
         .into(),
+    })
+}
+
+pub fn get_version_runtime_information(
+    version: &str,
+    minecraft_directory: impl AsRef<Path>,
+) -> Option<VersionRuntimeInformation> {
+    let data = match get_client_json(version, &minecraft_directory) {
+        Ok(json_data) => json_data,
+        Err(_) => return None,
+    };
+    if data.java_version.is_none() {
+        return None;
+    }
+    Some(VersionRuntimeInformation {
+        name: data.java_version.clone().unwrap().component,
+        java_major_version: data.java_version.clone().unwrap().major_version,
     })
 }
 
