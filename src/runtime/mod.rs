@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, fs, path::Path, process::Command};
+use std::{collections::HashMap, env, fs, io::Write, path::Path, process::Command};
 
 use reqwest::header;
 
@@ -7,7 +7,9 @@ use crate::{
         runtime_types::{PlatformManifestJson, RuntimeListJson},
         CallbackDict,
     },
-    utils::helper::{check_path_inside_minecraft_directory, download_file, get_user_agent},
+    utils::helper::{
+        check_path_inside_minecraft_directory, download_file, get_sha1_hash, get_user_agent,
+    },
 };
 
 const JVM_MANIFEST_URL: &str = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
@@ -104,7 +106,7 @@ pub fn install_jvm_runtime(
         .as_ref()
         .join("runtime")
         .join(jvm_version)
-        .join(platform_string)
+        .join(&platform_string)
         .join(jvm_version);
 
     // Download all files of the runtime
@@ -114,7 +116,7 @@ pub fn install_jvm_runtime(
     let mut count = 0;
     let mut file_list: Vec<&String> = vec![];
     for (key, value) in platform_manifest.files.iter() {
-        let current_path = base_path.clone().join(key);
+        let current_path = base_path.join(key);
         check_path_inside_minecraft_directory(&minecraft_directory, &current_path);
         if let Some(vtype) = &value.r#type {
             if vtype == "file" {
@@ -151,15 +153,61 @@ pub fn install_jvm_runtime(
             } else if vtype == "link" {
                 check_path_inside_minecraft_directory(
                     &minecraft_directory,
-                    base_path
-                        .clone()
-                        .join(&value.target.as_ref().map_or("".to_string(), |s| s.clone())),
+                    base_path.join(&value.target.as_ref().map_or("".to_string(), |s| s.clone())),
                 );
-                todo!()
+                if !current_path.parent().unwrap().exists() {
+                    let _ = fs::create_dir_all(current_path.parent().unwrap());
+                }
+                // Create a symbolic link at `link_path` pointing to `target`
+                #[cfg(unix)]
+                {
+                    let _ =
+                        std::os::unix::fs::symlink(Path::new(value.target.unwrap()), &current_path);
+                }
             }
+            if let Some(set_progresss) = callback.set_progress {
+                set_progresss(count);
+            }
+            count += 1;
         }
     }
-    todo!()
+    // Create the .version file
+    let version_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(&platform_string)
+        .join(".version");
+    check_path_inside_minecraft_directory(&minecraft_directory, &version_path);
+    let mut version_file = fs::File::create(&version_path)?;
+    version_file.write_all(
+        manifest_data
+            .get(&platform_string)
+            .unwrap()
+            .get(jvm_version)
+            .unwrap()[0]
+            .version
+            .get("name")
+            .unwrap()
+            .as_bytes(),
+    )?;
+
+    // Write the .sha1 file
+    let sha1_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(platform_string)
+        .join(format!("{}.sha1", jvm_version));
+    check_path_inside_minecraft_directory(&minecraft_directory, &sha1_path);
+    let mut sha1_file = fs::File::create(&sha1_path)?;
+    for file in file_list {
+        let current_path = base_path.join(file);
+        let ctime = current_path.metadata()?.modified()?.elapsed()?.as_nanos(); // Use chrono for more precise time handling
+        let sha1 = get_sha1_hash(current_path.to_str().unwrap())?;
+        sha1_file.write_all(format!("{} /#// {} {}\n", file, sha1, ctime).as_bytes())?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]
