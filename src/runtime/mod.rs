@@ -6,12 +6,13 @@ use std::{
     process::Command,
 };
 
+use chrono::DateTime;
 use reqwest::header;
 
 use crate::{
     types::{
         runtime_types::{PlatformManifestJson, RuntimeListJson},
-        CallbackDict,
+        CallbackDict, JvmRuntimeInformation,
     },
     utils::helper::{
         check_path_inside_minecraft_directory, download_file, get_sha1_hash, get_user_agent,
@@ -255,6 +256,54 @@ pub fn get_executable_path(
     }
 
     None
+}
+
+pub fn get_jvm_runtime_information(
+    jvm_version: &str,
+) -> Result<JvmRuntimeInformation, Box<dyn std::error::Error>> {
+    let client = reqwest::blocking::Client::new();
+    let manifest_data: RuntimeListJson = client
+        .get(JVM_MANIFEST_URL)
+        .header("user-agent", get_user_agent())
+        .send()?
+        .json()?;
+
+    let platform_string = get_jvm_platform_string();
+
+    // Check if the jvm version exists
+    if !manifest_data
+        .get(&platform_string)
+        .unwrap_or(&HashMap::new())
+        .contains_key(jvm_version)
+    {
+        return Err(format!("jvm version is not found: {}", jvm_version).into());
+    }
+
+    if manifest_data
+        .get(&platform_string)
+        .unwrap()
+        .get(jvm_version)
+        .unwrap_or(&Vec::new())
+        .is_empty()
+    {
+        return Err(format!("this platform not supported yet.").into());
+    }
+    let runtime_list_json_entry = manifest_data
+        .get(&platform_string)
+        .unwrap()
+        .get(jvm_version)
+        .unwrap();
+    Ok(JvmRuntimeInformation {
+        name: runtime_list_json_entry[0]
+            .version
+            .get("name")
+            .unwrap()
+            .to_string(),
+        released: DateTime::parse_from_rfc3339(
+            runtime_list_json_entry[0].version.get("released").unwrap(),
+        )?
+        .into(),
+    })
 }
 
 #[cfg(test)]
