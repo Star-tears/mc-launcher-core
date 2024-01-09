@@ -57,12 +57,13 @@ pub struct ClientJsonLibraryDownloadsArtifact {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ClientJsonLibraryDownloads {
     pub artifact: Option<ClientJsonLibraryDownloadsArtifact>,
+    /// keys: {"javadoc", "natives-linux", "natives-macos", "natives-windows", "sources"}
     pub classifiers: Option<HashMap<String, ClientJsonLibraryDownloadsArtifact>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ClientJsonLibrary {
-    pub name: String,
+    pub name: Option<String>,
     pub downloads: Option<ClientJsonLibraryDownloads>,
     /// keys: {"exclude"}
     pub extract: Option<HashMap<String, Vec<String>>>,
@@ -96,22 +97,22 @@ pub enum StringAndClientJsonArgumentRuleValue {
 
 #[derive(Debug, Deserialize)]
 pub struct ClientJson {
-    pub id: String,
-    pub assets: String,
+    pub id: Option<String>,
+    pub assets: Option<String>,
     #[serde(rename = "minecraftArguments")]
     pub minecraft_arguments: Option<String>,
-    pub time: String,
+    pub time: Option<String>,
     #[serde(rename = "minimumLauncherVersion")]
     pub minimum_launcher_version: i32,
     pub jar: Option<String>,
     #[serde(rename = "mainClass")]
-    pub main_class: String,
+    pub main_class: Option<String>,
     #[serde(rename = "releaseTime")]
-    pub release_time: String,
-    pub r#type: String,
+    pub release_time: Option<String>,
+    pub r#type: Option<String>,
     #[serde(rename = "inheritsFrom")]
     pub inherits_from: Option<String>,
-    pub libraries: Vec<ClientJsonLibrary>,
+    pub libraries: Option<Vec<ClientJsonLibrary>>,
     pub arguments: Option<HashMap<String, Vec<StringAndClientJsonArgumentRuleValue>>>,
     #[serde(rename = "assetIndex")]
     pub asset_index: Option<ClientJsonAssetIndex>,
@@ -162,7 +163,12 @@ impl ClientJson {
         if let Some(inherits_from) = &other.inherits_from {
             self.inherits_from = Some(inherits_from.clone());
         }
-        self.libraries.extend_from_slice(&other.libraries);
+        self.libraries = self.libraries.clone().and_then(|mut a_vec| {
+            other.libraries.clone().map(|b_vec| {
+                a_vec.extend(b_vec);
+                a_vec
+            })
+        });
 
         if let Some(arguments) = &other.arguments {
             if let Some(self_arguments) = &mut self.arguments {

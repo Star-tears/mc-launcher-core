@@ -3,7 +3,10 @@ use crypto::digest::Digest;
 use crypto::sha1::Sha1;
 use lazy_static::lazy_static;
 use regex::Regex;
-use reqwest::blocking::{Client, Response};
+use reqwest::{
+    blocking::{Client, Response},
+    header,
+};
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -26,38 +29,37 @@ use crate::types::{
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
     path: impl AsRef<Path>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) {
     let minecraft_directory = minecraft_directory.as_ref().canonicalize().unwrap();
     let path = path.as_ref().canonicalize().unwrap();
 
     if !path.starts_with(&minecraft_directory) {
-        return Err(format!(
+        eprintln!(
             "{} is outside Minecraft directory {}",
             path.to_string_lossy(),
             minecraft_directory.to_string_lossy()
-        )
-        .into());
+        );
     }
-    Ok(())
 }
 
 pub fn download_file(
     url: &str,
-    path: &str,
+    path: impl AsRef<Path>,
     sha1: Option<&str>,
     lzma_compressed: bool,
     minecraft_directory: Option<&str>,
-    session: Option<reqwest::blocking::Client>,
-    callback: CallbackDict,
+    session: Option<&reqwest::blocking::Client>,
+    callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if let Some(mc_dir) = minecraft_directory {
-        check_path_inside_minecraft_directory(mc_dir, path)?;
+        check_path_inside_minecraft_directory(mc_dir, &path);
     }
-
-    if Path::new(path).is_file() {
+    let path_ref: &Path = path.as_ref();
+    let path_string: String = path_ref.to_string_lossy().into_owned();
+    if Path::new(&path_string).is_file() {
         match sha1 {
             Some(expected_sha1) => {
-                let actual_sha1 = get_sha1_hash(path)?;
+                let actual_sha1 = get_sha1_hash(&path)?;
                 if actual_sha1 == expected_sha1 {
                     return Ok(false);
                 }
@@ -66,33 +68,34 @@ pub fn download_file(
         }
     }
 
-    if let Some(parent_dir) = Path::new(path).parent() {
-        if let Err(err) = fs::create_dir_all(parent_dir) {
-            eprintln!("Error creating directories: {}", err);
-        }
+    if let Some(parent_dir) = Path::new(&path_string).parent() {
+        let _ = fs::create_dir_all(parent_dir);
     }
 
     if let Some(set_status) = callback.set_status {
-        if let Some(file_name) = Path::new(path).file_name() {
+        if let Some(file_name) = Path::new(&path_string).file_name() {
             if let Some(file_name_str) = file_name.to_str() {
                 set_status(format!("Download {}", file_name_str));
             }
         }
     }
     let mut response: Response;
-    if session.is_none() {
+    if let Some(client) = session {
+        response = client
+            .get(url)
+            .header(header::USER_AGENT, get_user_agent())
+            .send()?
+    } else {
         let client = Client::builder()
             .user_agent(get_user_agent()) // 设置 User-Agent
             .build()?;
         response = client.get(url).send()?;
-    } else {
-        response = Client::new().get(url).send()?;
     }
 
     if !response.status().is_success() {
         return Ok(false);
     }
-    let mut file = BufWriter::new(File::create(path)?);
+    let mut file = BufWriter::new(File::create(&path)?);
     if lzma_compressed {
         let mut decoder = XzDecoder::new(response);
         io::copy(&mut decoder, &mut file)?;
@@ -105,7 +108,7 @@ pub fn download_file(
         if actual_sha1 != expected_sha1 {
             return Err(Box::new(InvalidChecksum {
                 url: url.to_string(),
-                path: path.to_string(),
+                path: path_string,
                 expected: expected_sha1.to_string(),
                 actual: actual_sha1,
             }));
@@ -390,11 +393,11 @@ pub fn extract_file_from_zip(
     minecraft_directory: Option<&Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(minecraft_directory) = minecraft_directory {
-        check_path_inside_minecraft_directory(minecraft_directory, extract_path)?;
+        check_path_inside_minecraft_directory(minecraft_directory, extract_path);
     }
 
     if let Some(parent) = Path::new(extract_path).parent() {
-        fs::create_dir_all(parent)?;
+        let _ = fs::create_dir_all(parent);
     }
 
     let mut file = fs::File::create(extract_path)?;

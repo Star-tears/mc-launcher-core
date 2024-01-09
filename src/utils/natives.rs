@@ -38,7 +38,7 @@ pub fn extract_natives_file(
     extract_data: &HashMap<String, Vec<String>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 如果提取目录不存在，则创建
-    fs::create_dir_all(&extract_path)?;
+    let _ = fs::create_dir_all(&extract_path);
 
     // 打开 ZIP 文件
     let file = fs::File::open(filename)?;
@@ -90,14 +90,14 @@ pub fn extract_natives(
         data = inherit_json(&data, &path)?;
     }
 
-    for library in &data.libraries {
+    for library in &data.libraries.unwrap_or(Vec::new()) {
         if let Some(rules) = &library.rules {
             if !parse_rule_list(rules.to_vec(), MinecraftOptions::default()) {
                 continue;
             }
         }
 
-        let current_path = get_library_path(&library.name, &path);
+        let current_path = get_library_path(&library.name.clone().unwrap(), &path);
         let native = get_natives(&library);
 
         if native.is_empty() {
