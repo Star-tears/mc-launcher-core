@@ -1,4 +1,10 @@
-use std::{collections::HashMap, env, fs, io::Write, path::Path, process::Command};
+use std::{
+    collections::HashMap,
+    env, fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use reqwest::header;
 
@@ -208,6 +214,47 @@ pub fn install_jvm_runtime(
         sha1_file.write_all(format!("{} /#// {} {}\n", file, sha1, ctime).as_bytes())?;
     }
     Ok(())
+}
+
+pub fn get_executable_path(
+    jvm_version: &str,
+    minecraft_directory: impl AsRef<Path>,
+) -> Option<PathBuf> {
+    let java_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(get_jvm_platform_string())
+        .join(jvm_version)
+        .join("bin")
+        .join("java");
+
+    if java_path.is_file() {
+        return Some(java_path);
+    }
+
+    let java_exe_path = java_path.with_extension("exe");
+    if java_exe_path.is_file() {
+        return Some(java_exe_path);
+    }
+
+    let java_alternate_path = minecraft_directory
+        .as_ref()
+        .join("runtime")
+        .join(jvm_version)
+        .join(get_jvm_platform_string())
+        .join(jvm_version)
+        .join("jre.bundle")
+        .join("Contents")
+        .join("Home")
+        .join("bin")
+        .join("java");
+
+    if java_alternate_path.is_file() {
+        return Some(java_alternate_path);
+    }
+
+    None
 }
 
 #[cfg(test)]
