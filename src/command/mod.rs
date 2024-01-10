@@ -1,12 +1,9 @@
-use serde_json::{Map, Value};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::Path};
 
 use crate::{
     types::{shared_types::ClientJson, MinecraftOptions},
     utils::{
+        get_core_version,
         helper::{get_classpath_separator, get_library_path, parse_rule_list},
         natives::get_natives,
     },
@@ -79,6 +76,129 @@ fn get_libraries(data: &ClientJson, path: impl AsRef<Path>) -> String {
     }
 
     libstr
+}
+
+fn replace_arguments(
+    mut argstr: String,
+    version_data: &ClientJson,
+    path: impl AsRef<Path>,
+    options: &MinecraftOptions,
+    classpath: impl AsRef<Path>,
+) -> String {
+    argstr = argstr.replace(
+        "${natives_directory}",
+        options.natives_directory.as_deref().unwrap_or(""),
+    );
+    argstr = argstr.replace(
+        "${launcher_name}",
+        options
+            .launcher_name
+            .as_deref()
+            .unwrap_or("mc-launcher-core"),
+    );
+    argstr = argstr.replace(
+        "${launcher_version}",
+        options
+            .launcher_version
+            .as_deref()
+            .unwrap_or(&get_core_version()),
+    );
+    argstr = argstr.replace(
+        "${classpath}",
+        classpath.as_ref().to_str().unwrap_or_default(),
+    );
+    argstr = argstr.replace(
+        "${auth_player_name}",
+        options.username.as_deref().unwrap_or("{username}"),
+    );
+    argstr = argstr.replace(
+        "${version_name}",
+        version_data.id.as_deref().unwrap_or_default(),
+    );
+    argstr = argstr.replace(
+        "${game_directory}",
+        options
+            .game_directory
+            .as_deref()
+            .unwrap_or(path.as_ref().to_str().unwrap_or_default()),
+    );
+    argstr = argstr.replace(
+        "${assets_root}",
+        path.as_ref().join("assets").to_str().unwrap_or_default(),
+    );
+    argstr = argstr.replace(
+        "${assets_index_name}",
+        version_data
+            .assets
+            .as_deref()
+            .unwrap_or(&version_data.id.as_ref().unwrap_or(&"".to_string())),
+    );
+    argstr = argstr.replace("${auth_uuid}", options.uuid.as_deref().unwrap_or("{uuid}"));
+    argstr = argstr.replace(
+        "${auth_access_token}",
+        options.token.as_deref().unwrap_or("{token}"),
+    );
+    argstr = argstr.replace("${user_type}", "msa");
+    argstr = argstr.replace(
+        "${version_type}",
+        version_data.r#type.as_deref().unwrap_or_default(),
+    );
+    argstr = argstr.replace("${user_properties}", "{}");
+    argstr = argstr.replace(
+        "${resolution_width}",
+        options.resolution_width.as_deref().unwrap_or("854"),
+    );
+    argstr = argstr.replace(
+        "${resolution_height}",
+        options.resolution_height.as_deref().unwrap_or("480"),
+    );
+    argstr = argstr.replace(
+        "${game_assets}",
+        path.as_ref()
+            .join("assets")
+            .join("virtual")
+            .join("legacy")
+            .to_str()
+            .unwrap_or_default(),
+    );
+    argstr = argstr.replace(
+        "${auth_session}",
+        options.token.as_deref().unwrap_or("{token}"),
+    );
+    argstr = argstr.replace(
+        "${library_directory}",
+        path.as_ref().join("libraries").to_str().unwrap_or_default(),
+    );
+    argstr = argstr.replace("${classpath_separator}", &get_classpath_separator());
+    argstr = argstr.replace(
+        "${quickPlayPath}",
+        options
+            .quick_play_path
+            .as_deref()
+            .unwrap_or("{quickPlayPath}"),
+    );
+    argstr = argstr.replace(
+        "${quickPlaySingleplayer}",
+        options
+            .quick_play_singleplayer
+            .as_deref()
+            .unwrap_or("{quickPlaySingleplayer}"),
+    );
+    argstr = argstr.replace(
+        "${quickPlayMultiplayer}",
+        options
+            .quick_play_multiplayer
+            .as_deref()
+            .unwrap_or("{quickPlayMultiplayer}"),
+    );
+    argstr = argstr.replace(
+        "${quickPlayRealms}",
+        options
+            .quick_play_realms
+            .as_deref()
+            .unwrap_or("{quickPlayRealms}"),
+    );
+    argstr
 }
 
 #[cfg(test)]
