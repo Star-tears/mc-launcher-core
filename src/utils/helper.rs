@@ -189,9 +189,9 @@ fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool 
     !return_value
 }
 
-pub fn parse_rule_list(rules: Vec<ClientJsonRule>, options: MinecraftOptions) -> bool {
+pub fn parse_rule_list(rules: &Vec<ClientJsonRule>, options: &MinecraftOptions) -> bool {
     for i in rules {
-        if !parse_single_rule(&i, &options) {
+        if !parse_single_rule(i, options) {
             return false;
         }
     }
