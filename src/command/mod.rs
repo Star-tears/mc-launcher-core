@@ -1,13 +1,14 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
+    runtime::get_executable_path,
     types::{
-        shared_types::{ClientJson, ClientJsonArgumentRule, StringAndVecStringValue},
+        shared_types::{ClientJson, StringAndClientJsonArgumentRuleValue, StringAndVecStringValue},
         MinecraftOptions,
     },
     utils::{
         get_core_version,
-        helper::{get_classpath_separator, get_library_path, parse_rule_list},
+        helper::{get_classpath_separator, get_library_path, inherit_json, parse_rule_list},
         natives::get_natives,
     },
 };
@@ -204,11 +205,11 @@ fn replace_arguments(
     argstr
 }
 
-fn get_arguments_string<P: AsRef<Path>>(
+fn get_arguments_string(
     version_data: &ClientJson,
-    path: P,
+    path: impl AsRef<Path>,
     options: &MinecraftOptions,
-    classpath: P,
+    classpath: impl AsRef<Path>,
 ) -> Vec<String> {
     let mut arglist: Vec<String> = Vec::new();
 
@@ -255,26 +256,27 @@ fn get_arguments_string<P: AsRef<Path>>(
     arglist
 }
 
-enum StrAndClientJsonArgumentRuleCValue {
-    Str(String),
-    ClientJsonArgumentRule(ClientJsonArgumentRule),
-}
-
 fn get_arguments(
-    data: Vec<StrAndClientJsonArgumentRuleCValue>,
+    data: Vec<StringAndClientJsonArgumentRuleValue>,
     version_data: &ClientJson,
-    path: &str,
+    path: impl AsRef<Path>,
     options: &MinecraftOptions,
-    classpath: &str,
+    classpath: impl AsRef<Path>,
 ) -> Vec<String> {
     let mut arglist: Vec<String> = Vec::new();
 
     for i in data {
         match i {
-            StrAndClientJsonArgumentRuleCValue::Str(s) => {
-                arglist.push(replace_arguments(s, version_data, path, options, classpath));
+            StringAndClientJsonArgumentRuleValue::StringValue(s) => {
+                arglist.push(replace_arguments(
+                    s,
+                    version_data,
+                    &path,
+                    options,
+                    &classpath,
+                ));
             }
-            StrAndClientJsonArgumentRuleCValue::ClientJsonArgumentRule(rule) => {
+            StringAndClientJsonArgumentRuleValue::ClientJsonArgumentRuleValue(rule) => {
                 if let Some(compatibility_rules) = rule.compatibility_rules.as_ref() {
                     if !parse_rule_list(compatibility_rules, options) {
                         continue;
@@ -293,9 +295,9 @@ fn get_arguments(
                             arglist.push(replace_arguments(
                                 s.to_string(),
                                 version_data,
-                                path,
+                                &path,
                                 options,
-                                classpath,
+                                &classpath,
                             ));
                         }
                         StringAndVecStringValue::VecStringValue(vec_s) => {
@@ -303,9 +305,9 @@ fn get_arguments(
                                 arglist.push(replace_arguments(
                                     s.to_string(),
                                     version_data,
-                                    path,
+                                    &path,
                                     options,
-                                    classpath,
+                                    &classpath,
                                 ));
                             }
                         }
@@ -316,6 +318,157 @@ fn get_arguments(
     }
 
     arglist
+}
+
+pub fn get_minecraft_command(
+    version: &str,
+    minecraft_directory: impl AsRef<Path>,
+    options_arg: &MinecraftOptions,
+) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    if !minecraft_directory
+        .as_ref()
+        .join("versions")
+        .join(version)
+        .is_dir()
+    {
+        return Err(format!("version not found: {}", version).into());
+    }
+    let mut options = options_arg.clone();
+
+    let file_path = minecraft_directory
+        .as_ref()
+        .join("versions")
+        .join(version)
+        .join(version.to_owned() + ".json");
+    let json_content = fs::read_to_string(&file_path)?;
+    let mut data: ClientJson = serde_json::from_str(&json_content)?;
+
+    if data.inherits_from.is_some() {
+        data = inherit_json(&data, &minecraft_directory)?;
+    }
+
+    if options.natives_directory.is_none() {
+        let version_id = data.id.as_ref().unwrap();
+        let default_natives_directory = minecraft_directory
+            .as_ref()
+            .join("versions")
+            .join(version_id)
+            .join("natives");
+        options.natives_directory = Some(default_natives_directory.to_str().unwrap().to_string());
+    }
+    let classpath = get_libraries(&data, &minecraft_directory);
+
+    let mut command: Vec<String> = Vec::new();
+
+    if let Some(executable_path) = options.executable_path.as_ref() {
+        command.push(executable_path.to_string());
+    } else if let Some(java_version) = data.java_version.as_ref() {
+        match get_executable_path(&java_version.component, &minecraft_directory) {
+            Some(java_path) => command.push(java_path.to_str().unwrap().to_string()),
+            None => command.push("java".to_owned()),
+        }
+    } else {
+        command.push(
+            options
+                .default_executable_path
+                .clone()
+                .unwrap_or("java".to_owned()),
+        );
+    }
+
+    if let Some(jvm_arguments) = options.jvm_arguments.as_ref() {
+        command.extend(jvm_arguments.clone());
+    }
+
+    match data.arguments.as_ref() {
+        Some(arguments) => match arguments.get("jvm") {
+            Some(v) => {
+                command.extend(get_arguments(
+                    v.to_vec(),
+                    &data,
+                    &minecraft_directory,
+                    &options,
+                    &classpath,
+                ));
+            }
+            None => {
+                command.push(format!(
+                    "-Djava.library.path={}",
+                    options.natives_directory.clone().unwrap_or("".to_string())
+                ));
+                command.push("-cp".to_string());
+                command.push(classpath.clone());
+            }
+        },
+        None => {
+            command.push(format!(
+                "-Djava.library.path={}",
+                options.natives_directory.clone().unwrap_or("".to_string())
+            ));
+            command.push("-cp".to_string());
+            command.push(classpath.clone());
+        }
+    }
+    if options.enable_logging_config.unwrap_or(false) {
+        if let Some(logging) = data.logging.as_ref() {
+            if !logging.is_empty() {
+                let logger_file = minecraft_directory
+                    .as_ref()
+                    .join("assets")
+                    .join("log_configs")
+                    .join(logging.get("client").unwrap().file.id.clone());
+                command.push(
+                    logging
+                        .get("client")
+                        .unwrap()
+                        .argument
+                        .replace("${path}", logger_file.to_str().unwrap()),
+                );
+            }
+        }
+    }
+
+    if let Some(main_class) = data.main_class.as_ref() {
+        command.push(main_class.clone());
+    }
+
+    if data.minecraft_arguments.is_some() {
+        command.extend(get_arguments_string(
+            &data,
+            minecraft_directory,
+            &options,
+            &classpath,
+        ));
+    } else if let Some(arguments) = data.arguments.as_ref() {
+        if let Some(game) = arguments.get("game") {
+            command.extend(get_arguments(
+                game.to_vec(),
+                &data,
+                minecraft_directory,
+                &options,
+                &classpath,
+            ));
+        }
+    }
+
+    if let Some(server) = options.server.as_ref() {
+        command.push("--server".to_string());
+        command.push(server.to_string());
+        if let Some(port) = options.port.as_ref() {
+            command.push("--port".to_string());
+            command.push(port.to_string());
+        }
+    }
+
+    if options.disable_multiplayer.unwrap_or(false) {
+        command.push("--disableMultiplayer".to_string());
+    }
+
+    if options.disable_chat.unwrap_or(false) {
+        command.push("--disableChat".to_string());
+    }
+
+    Ok(command)
 }
 
 #[cfg(test)]

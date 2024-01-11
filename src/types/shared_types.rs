@@ -73,7 +73,7 @@ pub struct ClientJsonLibrary {
     pub url: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ClientJsonLoggingFile {
     pub id: String,
     pub sha1: String,
@@ -81,7 +81,7 @@ pub struct ClientJsonLoggingFile {
     pub url: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ClientJsonLogging {
     pub argument: String,
     pub file: ClientJsonLoggingFile,
@@ -95,7 +95,7 @@ pub enum StringAndClientJsonArgumentRuleValue {
     ClientJsonArgumentRuleValue(ClientJsonArgumentRule),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ClientJson {
     pub id: Option<String>,
     pub assets: Option<String>,
