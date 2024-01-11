@@ -201,6 +201,56 @@ fn replace_arguments(
     argstr
 }
 
+fn get_arguments_string<P: AsRef<Path>>(
+    version_data: &ClientJson,
+    path: P,
+    options: &MinecraftOptions,
+    classpath: P,
+) -> Vec<String> {
+    let mut arglist: Vec<String> = Vec::new();
+
+    for v in version_data
+        .minecraft_arguments
+        .as_ref()
+        .unwrap_or(&"".to_string())
+        .split(' ')
+    {
+        let v = replace_arguments(
+            v.to_string(),
+            version_data,
+            path.as_ref(),
+            options,
+            classpath.as_ref(),
+        );
+        arglist.push(v);
+    }
+
+    // Custom resolution is not in the list
+    if options.custom_resolution.unwrap_or(false) {
+        arglist.push("--width".to_string());
+        arglist.push(
+            options
+                .resolution_width
+                .as_deref()
+                .unwrap_or("854")
+                .to_string(),
+        );
+        arglist.push("--height".to_string());
+        arglist.push(
+            options
+                .resolution_height
+                .as_deref()
+                .unwrap_or("480")
+                .to_string(),
+        );
+    }
+
+    if options.demo.unwrap_or(false) {
+        arglist.push("--demo".to_string());
+    }
+
+    arglist
+}
 #[cfg(test)]
 mod test {
     use super::*;
