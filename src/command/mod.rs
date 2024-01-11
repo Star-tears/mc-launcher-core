@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
-    runtime::get_executable_path,
+    runtime::get_executable_path, 
     types::{
         shared_types::{ClientJson, StringAndClientJsonArgumentRuleValue, StringAndVecStringValue},
         MinecraftOptions,
