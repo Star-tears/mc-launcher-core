@@ -1,7 +1,10 @@
 use std::{collections::HashMap, path::Path};
 
 use crate::{
-    types::{shared_types::ClientJson, MinecraftOptions},
+    types::{
+        shared_types::{ClientJson, ClientJsonArgumentRule, StringAndVecStringValue},
+        MinecraftOptions,
+    },
     utils::{
         get_core_version,
         helper::{get_classpath_separator, get_library_path, parse_rule_list},
@@ -251,6 +254,70 @@ fn get_arguments_string<P: AsRef<Path>>(
 
     arglist
 }
+
+enum StrAndClientJsonArgumentRuleCValue {
+    Str(String),
+    ClientJsonArgumentRule(ClientJsonArgumentRule),
+}
+
+fn get_arguments(
+    data: Vec<StrAndClientJsonArgumentRuleCValue>,
+    version_data: &ClientJson,
+    path: &str,
+    options: &MinecraftOptions,
+    classpath: &str,
+) -> Vec<String> {
+    let mut arglist: Vec<String> = Vec::new();
+
+    for i in data {
+        match i {
+            StrAndClientJsonArgumentRuleCValue::Str(s) => {
+                arglist.push(replace_arguments(s, version_data, path, options, classpath));
+            }
+            StrAndClientJsonArgumentRuleCValue::ClientJsonArgumentRule(rule) => {
+                if let Some(compatibility_rules) = rule.compatibility_rules.as_ref() {
+                    if !parse_rule_list(compatibility_rules, options) {
+                        continue;
+                    }
+                }
+
+                if let Some(rules) = rule.rules.as_ref() {
+                    if !parse_rule_list(rules, options) {
+                        continue;
+                    }
+                }
+
+                if let Some(value) = rule.value.as_ref() {
+                    match value {
+                        StringAndVecStringValue::StringValue(s) => {
+                            arglist.push(replace_arguments(
+                                s.to_string(),
+                                version_data,
+                                path,
+                                options,
+                                classpath,
+                            ));
+                        }
+                        StringAndVecStringValue::VecStringValue(vec_s) => {
+                            for s in vec_s {
+                                arglist.push(replace_arguments(
+                                    s.to_string(),
+                                    version_data,
+                                    path,
+                                    options,
+                                    classpath,
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    arglist
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
