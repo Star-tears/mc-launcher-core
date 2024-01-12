@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use url::Url;
 
 use crate::{
-    types::microsoft_types::{AuthorizationTokenResponse, XBLResponse},
+    types::microsoft_types::{AuthorizationTokenResponse, XBLResponse, XSTSResponse},
     utils::helper::get_user_agent,
 };
 
@@ -240,6 +240,31 @@ pub fn authenticate_with_xbl(access_token: &str) -> Result<XBLResponse, reqwest:
 
     let xbl_response: XBLResponse = res.json()?;
     Ok(xbl_response)
+}
+
+pub fn authenticate_with_xsts(xbl_token: &str) -> Result<XSTSResponse, reqwest::Error> {
+    let mut parameters = HashMap::new();
+    parameters.insert(
+        "Properties",
+        json!({
+            "SandboxId": "RETAIL",
+            "UserTokens": [xbl_token],
+        }),
+    );
+    parameters.insert("RelyingParty", "rp://api.minecraftservices.com/".into());
+    parameters.insert("TokenType", "JWT".into());
+
+    let client = Client::new();
+    let res = client
+        .post("https://xsts.auth.xboxlive.com/xsts/authorize")
+        .json(&parameters)
+        .header("Content-Type", "application/json")
+        .header("user-agent", get_user_agent())
+        .header("Accept", "application/json")
+        .send()?;
+
+    let xsts_response: XSTSResponse = res.json()?;
+    Ok(xsts_response)
 }
 
 #[cfg(test)]
