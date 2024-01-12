@@ -121,6 +121,34 @@ pub fn get_auth_code_from_url(url: &str) -> Option<String> {
     None
 }
 
+pub fn parse_auth_code_url(
+    url: &str,
+    state: Option<String>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    if let Ok(parsed) = Url::parse(url) {
+        if let Some(qs) = parsed.query() {
+            let query_pairs: HashMap<_, _> = qs
+                .split('&')
+                .filter_map(|s| {
+                    let mut split = s.split('=');
+                    let key = split.next()?;
+                    let value = split.next()?;
+                    Some((key, value.to_string()))
+                })
+                .collect();
+            if state.is_some() {
+                if state != query_pairs.get("state").cloned() {
+                    return Err("state not equal.".into());
+                }
+            }
+            if let Some(code) = query_pairs.get("code") {
+                return Ok(code.clone());
+            }
+        }
+    }
+    Err("parse_auth_code_url error.".into())
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
