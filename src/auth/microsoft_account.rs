@@ -84,6 +84,23 @@ pub fn get_secure_login_data(
     (url_with_query.to_string(), state, code_verifier)
 }
 
+pub fn url_contains_auth_code(url: &str) -> bool {
+    if let Ok(parsed) = Url::parse(url) {
+        if let Some(qs) = parsed.query() {
+            let query_pairs: Vec<_> = qs.split('&').collect();
+            for pair in query_pairs {
+                let parts: Vec<_> = pair.split('=').collect();
+                if let [key, _] = parts[..] {
+                    if key == "code" {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
