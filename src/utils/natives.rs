@@ -92,7 +92,7 @@ pub fn extract_natives(
 
     for library in &data.libraries.unwrap_or(Vec::new()) {
         if let Some(rules) = &library.rules {
-            if !parse_rule_list(rules.to_vec(), MinecraftOptions::default()) {
+            if !parse_rule_list(rules, &MinecraftOptions::default()) {
                 continue;
             }
         }
