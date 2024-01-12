@@ -56,6 +56,34 @@ pub fn generate_state() -> String {
     state
 }
 
+pub fn get_secure_login_data(
+    client_id: &str,
+    redirect_uri: &str,
+    state: Option<&str>,
+) -> (String, String, String) {
+    let (code_verifier, code_challenge, code_challenge_method) = generate_pkce_data();
+
+    let state = match state {
+        Some(s) => s.to_string(),
+        None => generate_state(),
+    };
+
+    let mut parameters = HashMap::new();
+    parameters.insert("client_id", client_id);
+    parameters.insert("response_type", "code");
+    parameters.insert("redirect_uri", redirect_uri);
+    parameters.insert("response_mode", "query");
+    parameters.insert("scope", SCOPE);
+    parameters.insert("state", &state);
+    parameters.insert("code_challenge", &code_challenge);
+    parameters.insert("code_challenge_method", &code_challenge_method);
+    let url = Url::parse(AUTH_URL).expect("Invalid AUTH_URL");
+    let url_with_query = url
+        .join(&("?".to_owned() + &serde_urlencoded::to_string(parameters).unwrap()))
+        .expect("Failed to build URL");
+    (url_with_query.to_string(), state, code_verifier)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
