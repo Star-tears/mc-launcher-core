@@ -8,7 +8,8 @@ use url::Url;
 
 use crate::{
     types::microsoft_types::{
-        AuthorizationTokenResponse, MinecraftAuthenticateResponse, XBLResponse, XSTSResponse,
+        AuthorizationTokenResponse, MinecraftAuthenticateResponse, MinecraftStoreResponse,
+        XBLResponse, XSTSResponse,
     },
     utils::helper::get_user_agent,
 };
@@ -288,6 +289,18 @@ pub fn authenticate_with_minecraft(
 
     let minecraft_response: MinecraftAuthenticateResponse = res.json()?;
     Ok(minecraft_response)
+}
+
+pub fn get_store_information(access_token: &str) -> Result<MinecraftStoreResponse, reqwest::Error> {
+    let client = Client::new();
+    let res = client
+        .get("https://api.minecraftservices.com/entitlements/mcstore")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("user-agent", get_user_agent())
+        .send()?;
+
+    let store_response: MinecraftStoreResponse = res.json()?;
+    Ok(store_response)
 }
 
 #[cfg(test)]
