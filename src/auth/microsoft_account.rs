@@ -101,6 +101,26 @@ pub fn url_contains_auth_code(url: &str) -> bool {
     false
 }
 
+pub fn get_auth_code_from_url(url: &str) -> Option<String> {
+    if let Ok(parsed) = Url::parse(url) {
+        if let Some(qs) = parsed.query() {
+            let query_pairs: HashMap<_, _> = qs
+                .split('&')
+                .filter_map(|s| {
+                    let mut split = s.split('=');
+                    let key = split.next()?;
+                    let value = split.next()?;
+                    Some((key, value.to_string()))
+                })
+                .collect();
+            if let Some(code) = query_pairs.get("code") {
+                return Some(code.clone());
+            }
+        }
+    }
+    None
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -128,5 +148,11 @@ mod test {
     #[test]
     fn debug_generate_pkce_data() {
         println!("{:#?}", generate_pkce_data());
+    }
+
+    #[test]
+    fn test_get_auth_code_from_url() {
+        let url = "https://test.example.com/test?code1=2&code=13&t=sd";
+        assert_eq!(get_auth_code_from_url(url), Some("13".to_string()));
     }
 }
