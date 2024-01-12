@@ -7,7 +7,9 @@ use std::collections::HashMap;
 use url::Url;
 
 use crate::{
-    types::microsoft_types::{AuthorizationTokenResponse, XBLResponse, XSTSResponse},
+    types::microsoft_types::{
+        AuthorizationTokenResponse, MinecraftAuthenticateResponse, XBLResponse, XSTSResponse,
+    },
     utils::helper::get_user_agent,
 };
 
@@ -265,6 +267,27 @@ pub fn authenticate_with_xsts(xbl_token: &str) -> Result<XSTSResponse, reqwest::
 
     let xsts_response: XSTSResponse = res.json()?;
     Ok(xsts_response)
+}
+
+pub fn authenticate_with_minecraft(
+    userhash: &str,
+    xsts_token: &str,
+) -> Result<MinecraftAuthenticateResponse, reqwest::Error> {
+    let parameters = json!({
+        "identityToken": format!("XBL3.0 x={};{}", userhash, xsts_token),
+    });
+
+    let client = Client::new();
+    let res = client
+        .post("https://api.minecraftservices.com/authentication/login_with_xbox")
+        .json(&parameters)
+        .header("Content-Type", "application/json")
+        .header("user-agent", get_user_agent())
+        .header("Accept", "application/json")
+        .send()?;
+
+    let minecraft_response: MinecraftAuthenticateResponse = res.json()?;
+    Ok(minecraft_response)
 }
 
 #[cfg(test)]
