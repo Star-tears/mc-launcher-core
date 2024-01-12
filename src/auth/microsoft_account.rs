@@ -8,8 +8,8 @@ use url::Url;
 
 use crate::{
     types::microsoft_types::{
-        AuthorizationTokenResponse, MinecraftAuthenticateResponse, MinecraftStoreResponse,
-        XBLResponse, XSTSResponse,
+        AuthorizationTokenResponse, MinecraftAuthenticateResponse, MinecraftProfileResponse,
+        MinecraftStoreResponse, XBLResponse, XSTSResponse,
     },
     utils::helper::get_user_agent,
 };
@@ -301,6 +301,18 @@ pub fn get_store_information(access_token: &str) -> Result<MinecraftStoreRespons
 
     let store_response: MinecraftStoreResponse = res.json()?;
     Ok(store_response)
+}
+
+pub fn get_profile(access_token: &str) -> Result<MinecraftProfileResponse, reqwest::Error> {
+    let client = Client::new();
+    let res = client
+        .get("https://api.minecraftservices.com/minecraft/profile")
+        .header("Authorization", format!("Bearer {}", access_token))
+        .header("user-agent", get_user_agent())
+        .send()?;
+
+    let profile_response: MinecraftProfileResponse = res.json()?;
+    Ok(profile_response)
 }
 
 #[cfg(test)]
