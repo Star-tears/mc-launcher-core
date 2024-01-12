@@ -1,8 +1,11 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::{distributions::Alphanumeric, Rng};
+use reqwest::blocking::Client;
 use ring::digest;
 use std::collections::HashMap;
 use url::Url;
+
+use crate::{types::microsoft_types::AuthorizationTokenResponse, utils::helper::get_user_agent};
 
 const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
@@ -149,6 +152,39 @@ pub fn parse_auth_code_url(
     Err("parse_auth_code_url error.".into())
 }
 
+pub fn get_authorization_token(
+    client_id: &str,
+    client_secret: Option<&str>,
+    redirect_uri: &str,
+    auth_code: &str,
+    code_verifier: Option<&str>,
+) -> Result<AuthorizationTokenResponse, reqwest::Error> {
+    let mut parameters = HashMap::new();
+    parameters.insert("client_id", client_id);
+    parameters.insert("scope", SCOPE);
+    parameters.insert("code", auth_code);
+    parameters.insert("redirect_uri", redirect_uri);
+    parameters.insert("grant_type", "authorization_code");
+
+    if let Some(secret) = client_secret {
+        parameters.insert("client_secret", secret);
+    }
+
+    if let Some(verifier) = code_verifier {
+        parameters.insert("code_verifier", verifier);
+    }
+
+    let client = Client::new();
+    let res = client
+        .post(TOKEN_URL)
+        .form(&parameters)
+        .header("Content-Type", "application/x-www-form-urlencoded")
+        .header("user-agent", get_user_agent())
+        .send()?;
+
+    let token_response: AuthorizationTokenResponse = res.json()?;
+    Ok(token_response)
+}
 #[cfg(test)]
 mod test {
     use super::*;
