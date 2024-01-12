@@ -2,10 +2,14 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::{distributions::Alphanumeric, Rng};
 use reqwest::blocking::Client;
 use ring::digest;
+use serde_json::json;
 use std::collections::HashMap;
 use url::Url;
 
-use crate::{types::microsoft_types::AuthorizationTokenResponse, utils::helper::get_user_agent};
+use crate::{
+    types::microsoft_types::{AuthorizationTokenResponse, XBLResponse},
+    utils::helper::get_user_agent,
+};
 
 const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
 const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
@@ -210,6 +214,32 @@ pub fn refresh_authorization_token(
 
     let token_response: AuthorizationTokenResponse = res.json()?;
     Ok(token_response)
+}
+
+pub fn authenticate_with_xbl(access_token: &str) -> Result<XBLResponse, reqwest::Error> {
+    let mut parameters = HashMap::new();
+    parameters.insert(
+        "Properties",
+        json!({
+            "AuthMethod": "RPS",
+            "SiteName": "user.auth.xboxlive.com",
+            "RpsTicket": format!("d={}", access_token),
+        }),
+    );
+    parameters.insert("RelyingParty", "http://auth.xboxlive.com".into());
+    parameters.insert("TokenType", "JWT".into());
+
+    let client = Client::new();
+    let res = client
+        .post("https://user.auth.xboxlive.com/user/authenticate")
+        .json(&parameters)
+        .header("Content-Type", "application/json")
+        .header("user-agent", get_user_agent())
+        .header("Accept", "application/json")
+        .send()?;
+
+    let xbl_response: XBLResponse = res.json()?;
+    Ok(xbl_response)
 }
 
 #[cfg(test)]
