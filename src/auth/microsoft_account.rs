@@ -43,6 +43,19 @@ fn generate_pkce_data() -> (String, String, String) {
     (code_verifier, code_challenge, code_challenge_method)
 }
 
+pub fn generate_state() -> String {
+    let mut rng = rand::thread_rng();
+    let chars: Vec<char> = (0..16)
+        .map(|_| match rng.gen_range(0..64) {
+            0 => '-',
+            1 => '_',
+            _ => rng.sample(Alphanumeric) as char,
+        })
+        .collect();
+    let state: String = chars.iter().collect();
+    state
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

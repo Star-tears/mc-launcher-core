@@ -37,3 +37,9 @@ features = [
     "fast-rng",          # Use a faster (but still sufficiently random) RNG
     "macro-diagnostics", # Enable better diagnostics for compile-time UUIDs
 ]
+
+[package.metadata.exclude]
+# Add paths to exclude from the package here
+paths = [
+    "tests/**", # Exclude everything under the "test" directory
+]
