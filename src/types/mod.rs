@@ -11,7 +11,7 @@ pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq, Clone)]
 pub struct MinecraftOptions {
     pub username: Option<String>,
     pub uuid: Option<String>,

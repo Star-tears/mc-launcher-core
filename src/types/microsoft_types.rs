@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 
 #[derive(Debug, Deserialize)]
 pub struct AuthorizationTokenResponse {
@@ -21,17 +22,25 @@ pub struct DisplayClaims {
 
 #[derive(Debug, Deserialize)]
 pub struct XBLResponse {
+    #[serde(rename = "IssueInstant")]
     pub issue_instant: String,
+    #[serde(rename = "NotAfter")]
     pub not_after: String,
+    #[serde(rename = "Token")]
     pub token: String,
+    #[serde(rename = "DisplayClaims")]
     pub display_claims: DisplayClaims,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct XSTSResponse {
+    #[serde(rename = "IssueInstant")]
     pub issue_instant: String,
+    #[serde(rename = "NotAfter")]
     pub not_after: String,
+    #[serde(rename = "Token")]
     pub token: String,
+    #[serde(rename = "DisplayClaimns")]
     pub display_claimns: DisplayClaims,
 }
 
@@ -45,13 +54,14 @@ pub struct MinecraftStoreItem {
 pub struct MinecraftStoreResponse {
     pub items: Vec<MinecraftStoreItem>,
     pub signature: String,
+    #[serde(rename = "keyId")]
     pub key_id: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct MinecraftAuthenticateResponse {
     pub username: String,
-    pub roles: Vec<String>,
+    pub roles: Vec<Value>,
     pub access_token: String,
     pub token_type: String,
     pub expires_in: i32,

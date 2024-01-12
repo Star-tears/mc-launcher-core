@@ -1,6 +1,5 @@
 use chrono::Utc;
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
+use crypto::{digest::Digest, sha1::Sha1};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::{
@@ -189,9 +188,9 @@ fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool 
     !return_value
 }
 
-pub fn parse_rule_list(rules: Vec<ClientJsonRule>, options: MinecraftOptions) -> bool {
+pub fn parse_rule_list(rules: &Vec<ClientJsonRule>, options: &MinecraftOptions) -> bool {
     for i in rules {
-        if !parse_single_rule(&i, &options) {
+        if !parse_single_rule(i, options) {
             return false;
         }
     }
@@ -489,5 +488,23 @@ mod tests {
         //     Ok(client_json) => println!("{:#?}", client_json),
         //     Err(e) => println!("{}", e.to_string()),
         // }
+    }
+
+    #[test]
+    fn debug_get_sha1_hash() {
+        let res = get_sha1_hash("tests/1.20.4.json");
+
+        match res {
+            Ok(hash) => {
+                assert_eq!(
+                    hash,
+                    "1a37ca7da53faeaeab6c8299251165e1b964899f".to_string(),
+                    "文件的 SHA1 哈希值与期望值不同"
+                );
+            }
+            Err(err) => {
+                eprintln!("获取文件的 SHA1 哈希值时出错：{}", err);
+            }
+        }
     }
 }
