@@ -185,6 +185,33 @@ pub fn get_authorization_token(
     let token_response: AuthorizationTokenResponse = res.json()?;
     Ok(token_response)
 }
+
+pub fn refresh_authorization_token(
+    client_id: &str,
+    client_secret: Option<&str>,
+    refresh_token: &str,
+) -> Result<AuthorizationTokenResponse, reqwest::Error> {
+    let mut parameters = HashMap::new();
+    parameters.insert("client_id", client_id);
+    parameters.insert("scope", SCOPE);
+    parameters.insert("refresh_token", refresh_token);
+    parameters.insert("grant_type", "refresh_token");
+
+    if let Some(secret) = client_secret {
+        parameters.insert("client_secret", secret);
+    }
+
+    let client = Client::new();
+    let res = client
+        .post("https://login.live.com/oauth20_token.srf")
+        .form(&parameters)
+        .header("user-agent", get_user_agent())
+        .send()?;
+
+    let token_response: AuthorizationTokenResponse = res.json()?;
+    Ok(token_response)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
