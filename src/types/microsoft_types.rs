@@ -8,6 +8,7 @@ pub struct AuthorizationTokenResponse {
     pub expires_in: i32,
     pub scope: String,
     pub refresh_token: String,
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

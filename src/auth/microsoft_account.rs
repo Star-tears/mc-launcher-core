@@ -364,6 +364,47 @@ pub fn complete_login(
     })
 }
 
+pub fn complete_refresh(
+    client_id: &str,
+    client_secret: Option<&str>,
+    refresh_token: &str,
+) -> Result<CompleteLoginResponse, Box<dyn std::error::Error>> {
+    let token_request = refresh_authorization_token(client_id, client_secret, refresh_token)?;
+
+    if token_request.error.is_some() {
+        return Err("Invalid Refresh Token.".into());
+    }
+
+    let token = token_request.access_token;
+
+    let xbl_request = authenticate_with_xbl(&token)?;
+    let xbl_token = xbl_request.token;
+    let userhash = xbl_request.display_claims.xui[0].uhs.clone();
+
+    let xsts_request = authenticate_with_xsts(&xbl_token)?;
+    let xsts_token = xsts_request.token;
+
+    let account_request = authenticate_with_minecraft(&userhash, &xsts_token)?;
+    let access_token = account_request.access_token.clone();
+
+    let profile = get_profile(&access_token)?;
+
+    if profile.error == "NOT_FOUND" {
+        return Err("Account not own minecraft".into());
+    }
+
+    Ok(CompleteLoginResponse {
+        id: profile.id,
+        name: profile.name,
+        access_token: account_request.access_token,
+        refresh_token: token_request.refresh_token,
+        skins: profile.skins,
+        capes: profile.capes,
+        error: profile.error,
+        error_message: profile.error_message,
+    })
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
