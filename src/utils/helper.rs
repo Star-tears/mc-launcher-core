@@ -46,7 +46,7 @@ pub fn download_file(
     path: impl AsRef<Path>,
     sha1: Option<&str>,
     lzma_compressed: bool,
-    minecraft_directory: Option<&str>,
+    minecraft_directory: Option<impl AsRef<Path>>,
     session: Option<&reqwest::blocking::Client>,
     callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {

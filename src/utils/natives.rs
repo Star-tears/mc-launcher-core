@@ -33,7 +33,7 @@ pub fn get_natives(data: &ClientJsonLibrary) -> String {
 }
 
 pub fn extract_natives_file(
-    filename: &str,
+    filename: impl AsRef<Path>,
     extract_path: impl AsRef<Path>,
     extract_data: &HashMap<String, Vec<String>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
