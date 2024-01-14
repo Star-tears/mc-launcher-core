@@ -88,10 +88,10 @@ pub fn get_secure_login_data(
     parameters.insert("code_challenge", &code_challenge);
     parameters.insert("code_challenge_method", &code_challenge_method);
     let url = Url::parse(AUTH_URL).expect("Invalid AUTH_URL");
-    let url_with_query = url
+    let login_url = url
         .join(&("?".to_owned() + &serde_urlencoded::to_string(parameters).unwrap()))
         .expect("Failed to build URL");
-    (url_with_query.to_string(), state, code_verifier)
+    (login_url.to_string(), state, code_verifier)
 }
 
 pub fn url_contains_auth_code(url: &str) -> bool {
@@ -409,6 +409,25 @@ pub fn complete_refresh(
 mod test {
     use super::*;
 
+    // test with minecraft-console-client public client_id and redirecr_uri
+    const CLIENT_ID: &str = "54473e32-df8f-42e9-a649-9419b0dab9d3";
+    const REDIRECT_URI: &str = "https://mccteam.github.io/redirect.html";
+
+    #[test]
+    fn debug_get_login_url() {
+        dbg!(get_login_url(CLIENT_ID, REDIRECT_URI));
+    }
+
+    #[test]
+    fn debug_generate_pkce_data() {
+        dbg!(generate_pkce_data());
+    }
+
+    #[test]
+    fn debug_get_secure_login_data() {
+        dbg!(get_secure_login_data(CLIENT_ID, REDIRECT_URI, None));
+    }
+
     #[test]
     fn test_code_challenge() {
         let code_verifier: String = "7BSNrJnbWnVrx9Y3uoBEJmrd0eii9ZBEQ5AVw_j4lzIlnsxwTDLJdtaiuCdrkJZ4fVH-E3v_hP7ynwS4zIwrSVCzG7vr5MTXahwESJnsb3SFM5zpdNjj525JbjrUwctt".to_string();
@@ -427,11 +446,6 @@ mod test {
             code_challenge,
             "Nju8uPgZTErU1OxovBkfsGwykuhtCVCE-dGGhooiD8E".to_string()
         );
-    }
-
-    #[test]
-    fn debug_generate_pkce_data() {
-        println!("{:#?}", generate_pkce_data());
     }
 
     #[test]

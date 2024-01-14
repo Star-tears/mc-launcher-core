@@ -135,7 +135,7 @@ pub fn install_jvm_runtime(
                             &current_path,
                             Some(download_info.get("raw").unwrap().sha1.as_str()),
                             true,
-                            None,
+                            None::<&Path>,
                             Some(&client),
                             callback,
                         )?;
@@ -145,7 +145,7 @@ pub fn install_jvm_runtime(
                             &current_path,
                             Some(download_info.get("raw").unwrap().sha1.as_str()),
                             false,
-                            None,
+                            None::<&Path>,
                             Some(&client),
                             callback,
                         )?;

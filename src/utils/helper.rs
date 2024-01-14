@@ -46,7 +46,7 @@ pub fn download_file(
     path: impl AsRef<Path>,
     sha1: Option<&str>,
     lzma_compressed: bool,
-    minecraft_directory: Option<&str>,
+    minecraft_directory: Option<impl AsRef<Path>>,
     session: Option<&reqwest::blocking::Client>,
     callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
@@ -206,10 +206,11 @@ pub fn inherit_json(
         .as_ref()
         .ok_or("Missing 'inheritsFrom' key")?;
 
-    let mut file_path = path.as_ref().canonicalize()?;
-    file_path.push("versions");
-    file_path.push(inherit_version);
-    file_path.push(format!("{}.json", inherit_version));
+    let mut file_path = path
+        .as_ref()
+        .join("versions")
+        .join(inherit_version)
+        .join(format!("{}.json", inherit_version));
 
     let mut file = File::open(file_path)?;
     let mut file_content = String::new();
@@ -225,17 +226,24 @@ pub fn inherit_json(
 pub fn get_library_path(name: &str, path: impl AsRef<Path>) -> PathBuf {
     let mut libpath = path.as_ref().join("libraries");
     let parts: Vec<&str> = name.split(":").collect();
-    let (base_path, libname, version) = match &parts[..3] {
+    let (base_path, libname, mut version) = match parts[..3] {
         [base_path, libname, version] => (base_path, libname, version),
         _ => panic!("无效的库名称格式"),
     };
     for i in base_path.split('.') {
         libpath = libpath.join(i);
     }
-    let (version, fileend) = match version.split_once('@') {
-        Some((version, fileend)) => (version, fileend),
-        None => ("", "jar"),
+    let mut fileend = "jar";
+    let (ve, fi) = match version.split_once('@') {
+        Some((v, f)) => (v, f),
+        None => ("", ""),
     };
+    if !ve.is_empty() {
+        version = ve;
+    }
+    if !fi.is_empty() {
+        fileend = fi;
+    }
     let filename = format!(
         "{}-{}{}.{}",
         libname,
@@ -455,6 +463,11 @@ mod tests {
         if let Ok(response) = get_requests_response_cache("https://httpbin.org/ip") {
             println!("{:#?}", response);
         }
+    }
+
+    #[test]
+    fn debug_get_classpath_separator() {
+        dbg!(get_classpath_separator());
     }
 
     #[test]
