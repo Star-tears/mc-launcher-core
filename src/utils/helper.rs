@@ -28,17 +28,19 @@ use crate::types::{
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
     path: impl AsRef<Path>,
-) {
+) -> Result<(), Box<dyn std::error::Error>> {
     let minecraft_directory = minecraft_directory.as_ref().canonicalize().unwrap();
     let path = path.as_ref().canonicalize().unwrap();
 
     if !path.starts_with(&minecraft_directory) {
-        eprintln!(
+        return Err(format!(
             "{} is outside Minecraft directory {}",
             path.to_string_lossy(),
             minecraft_directory.to_string_lossy()
-        );
+        )
+        .into());
     }
+    Ok(())
 }
 
 pub fn download_file(
@@ -51,7 +53,7 @@ pub fn download_file(
     callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if let Some(mc_dir) = minecraft_directory {
-        check_path_inside_minecraft_directory(mc_dir, &path);
+        check_path_inside_minecraft_directory(mc_dir, &path)?;
     }
     let path_ref: &Path = path.as_ref();
     let path_string: String = path_ref.to_string_lossy().into_owned();
@@ -400,7 +402,7 @@ pub fn extract_file_from_zip(
     minecraft_directory: Option<&Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(minecraft_directory) = minecraft_directory {
-        check_path_inside_minecraft_directory(minecraft_directory, extract_path);
+        check_path_inside_minecraft_directory(minecraft_directory, extract_path)?;
     }
 
     if let Some(parent) = Path::new(extract_path).parent() {

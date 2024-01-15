@@ -1,20 +1,24 @@
 use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
+    runtime::install_jvm_runtime,
     types::{
         install_types::AssetsJson,
         shared_types::{ClientJson, ClientJsonLibrary, VersionListManifestJson},
         CallbackDict, MinecraftOptions,
     },
     utils::{
-        helper::{download_file, get_requests_response_cache, parse_rule_list},
+        helper::{
+            check_path_inside_minecraft_directory, download_file, get_requests_response_cache,
+            inherit_json, parse_rule_list,
+        },
         natives::{extract_natives_file, get_natives},
     },
 };
 
 fn install_libraries(
     id: &str,
-    libraries: Vec<ClientJsonLibrary>,
+    libraries: &Vec<ClientJsonLibrary>,
     path: impl AsRef<Path>,
     callback: &CallbackDict,
 ) {
@@ -211,7 +215,70 @@ fn do_version_install(
     url: Option<&str>,
     sha1: Option<&str>,
     callback: &CallbackDict,
-) {
+) -> Result<(), Box<dyn std::error::Error>> {
+    let version_path = path
+        .as_ref()
+        .join("versions")
+        .join(version_id)
+        .join(format!("{}.json", version_id));
+    if let Some(url) = url {
+        let _ = download_file(url, &version_path, sha1, false, Some(&path), None, callback);
+    }
+
+    // for forge
+    let file = fs::File::open(&version_path)?;
+    let mut version_data: ClientJson = serde_json::from_reader(file)?;
+    if let Some(inherits_from) = &version_data.inherits_from {
+        let _ = install_minecraft_version(&inherits_from, &path, callback);
+        version_data = inherit_json(&version_data, &path)?;
+    }
+
+    install_libraries(
+        &version_data.id.clone().unwrap_or("".to_string()),
+        &version_data.libraries.clone().unwrap_or(Vec::new()),
+        &path,
+        callback,
+    );
+    let _ = install_assets(&version_data, &path, callback);
+
+    // download minecraft.jar
+    let mcjar_path = path
+        .as_ref()
+        .join("versions")
+        .join(version_data.id.clone().unwrap())
+        .join(format!("{}.jar", version_data.id.clone().unwrap()));
+    if let Some(downloads) = &version_data.downloads {
+        let _ = download_file(
+            &downloads.get("client").unwrap().url,
+            &mcjar_path,
+            Some(&downloads.get("client").unwrap().sha1),
+            false,
+            Some(&path),
+            None,
+            callback,
+        );
+    }
+
+    // need to copy jar for old forge versions
+    if let Some(inherits_from) = &version_data.inherits_from {
+        if !mcjar_path.is_file() {
+            let inherits_path = path
+                .as_ref()
+                .join("versions")
+                .join(inherits_from)
+                .join(format!("{}.jar", inherits_from));
+            check_path_inside_minecraft_directory(&path, &inherits_path)?;
+            let _ = fs::copy(mcjar_path, inherits_path);
+        }
+    }
+    // install java runtime if needed
+    if let Some(java_version) = &version_data.java_version {
+        if let Some(set_states) = callback.set_status {
+            set_states("install java runtime.".to_string());
+        }
+        let _ = install_jvm_runtime(&java_version.component, &path, callback);
+    }
+    Ok(())
 }
 
 pub fn install_minecraft_version(
@@ -226,7 +293,7 @@ pub fn install_minecraft_version(
         .join(format!("{}.json", version_id))
         .is_file()
     {
-        do_version_install(version_id, &minecraft_directory, None, None, callback);
+        let _ = do_version_install(version_id, &minecraft_directory, None, None, callback);
         return Ok(());
     }
     let response = get_requests_response_cache(
@@ -235,7 +302,7 @@ pub fn install_minecraft_version(
     let version_list: VersionListManifestJson = serde_json::from_str(&response)?;
     for i in version_list.versions {
         if i.id == version_id {
-            do_version_install(
+            let _ = do_version_install(
                 version_id,
                 &minecraft_directory,
                 Some(&i.url),
