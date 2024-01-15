@@ -1,7 +1,11 @@
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
-    types::{shared_types::ClientJsonLibrary, CallbackDict, MinecraftOptions},
+    types::{
+        install_types::AssetsJson,
+        shared_types::{ClientJson, ClientJsonLibrary},
+        CallbackDict, MinecraftOptions,
+    },
     utils::{
         helper::{download_file, parse_rule_list},
         natives::{extract_natives_file, get_natives},
@@ -139,4 +143,64 @@ fn install_libraries(
             set_progress(count as i32);
         }
     }
+}
+
+fn install_assets(
+    data: &ClientJson,
+    path: impl AsRef<Path>,
+    callback: &CallbackDict,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if data.asset_index.is_none() {
+        return Ok(());
+    }
+    if let Some(set_states) = callback.set_status {
+        set_states("Download Assets.".to_string());
+    }
+    let session = reqwest::blocking::Client::new();
+    let local_path = path
+        .as_ref()
+        .join("assets")
+        .join("indexes")
+        .join(data.assets.clone().unwrap() + ".json");
+    let _ = download_file(
+        &data.asset_index.clone().unwrap().url,
+        &local_path,
+        Some(&data.asset_index.clone().unwrap().sha1),
+        false,
+        None::<&Path>,
+        Some(&session),
+        callback,
+    );
+
+    let file = fs::File::open(&local_path)?;
+    let assets_data: AssetsJson = serde_json::from_reader(file)?;
+    if let Some(set_max) = callback.set_max {
+        set_max(assets_data.objects.len() as i32 - 1);
+    }
+    let mut count = 0;
+    for value in assets_data.objects.values() {
+        let url = "https://resources.download.minecraft.net/".to_owned()
+            + value.hash.get(..2).unwrap()
+            + "/"
+            + &value.hash;
+        let _ = download_file(
+            &url,
+            &path
+                .as_ref()
+                .join("assets")
+                .join("objects")
+                .join(value.hash.get(..2).unwrap())
+                .join(&value.hash),
+            Some(&value.hash),
+            false,
+            Some(&path),
+            Some(&session),
+            callback,
+        );
+        count += 1;
+        if let Some(set_progress) = callback.set_progress {
+            set_progress(count);
+        }
+    }
+    Ok(())
 }
