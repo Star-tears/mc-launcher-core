@@ -1,3 +1,3 @@
 # mc-launcher-core
 
-> todo
+> 这是一个rust编写的mc启动器库

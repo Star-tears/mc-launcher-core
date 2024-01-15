@@ -66,7 +66,6 @@ pub fn download_file(
             None => return Ok(false),
         }
     }
-    dbg!("sha1");
     if let Some(parent_dir) = path.as_ref().parent() {
         let _ = fs::create_dir_all(parent_dir);
     }
