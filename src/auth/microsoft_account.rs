@@ -8,8 +8,8 @@ use url::Url;
 
 use crate::{
     types::microsoft_types::{
-        AuthorizationTokenResponse, MinecraftAuthenticateResponse, MinecraftProfileResponse,
-        MinecraftStoreResponse, XBLResponse, XSTSResponse,
+        AuthorizationTokenResponse, CompleteLoginResponse, MinecraftAuthenticateResponse,
+        MinecraftProfileResponse, MinecraftStoreResponse, XBLResponse, XSTSResponse,
     },
     utils::helper::get_user_agent,
 };
@@ -88,10 +88,10 @@ pub fn get_secure_login_data(
     parameters.insert("code_challenge", &code_challenge);
     parameters.insert("code_challenge_method", &code_challenge_method);
     let url = Url::parse(AUTH_URL).expect("Invalid AUTH_URL");
-    let url_with_query = url
+    let login_url = url
         .join(&("?".to_owned() + &serde_urlencoded::to_string(parameters).unwrap()))
         .expect("Failed to build URL");
-    (url_with_query.to_string(), state, code_verifier)
+    (login_url.to_string(), state, code_verifier)
 }
 
 pub fn url_contains_auth_code(url: &str) -> bool {
@@ -315,9 +315,118 @@ pub fn get_profile(access_token: &str) -> Result<MinecraftProfileResponse, reqwe
     Ok(profile_response)
 }
 
+pub fn complete_login(
+    client_id: &str,
+    client_secret: Option<&str>,
+    redirect_uri: &str,
+    auth_code: &str,
+    code_verifier: Option<&str>,
+) -> Result<CompleteLoginResponse, Box<dyn std::error::Error>> {
+    let token_request = get_authorization_token(
+        client_id,
+        client_secret,
+        redirect_uri,
+        auth_code,
+        code_verifier,
+    )?;
+    let token = token_request.access_token;
+
+    let xbl_request = authenticate_with_xbl(&token)?;
+    let xbl_token = xbl_request.token;
+    let userhash = xbl_request.display_claims.xui[0].uhs.clone();
+
+    let xsts_request = authenticate_with_xsts(&xbl_token)?;
+    let xsts_token = xsts_request.token;
+
+    let account_request = authenticate_with_minecraft(&userhash, &xsts_token)?;
+
+    if account_request.access_token.is_empty() {
+        return Err("Azure App not permitted.".into());
+    }
+
+    let access_token = account_request.access_token.clone();
+
+    let profile = get_profile(&access_token)?;
+
+    if profile.error == "NOT_FOUND" {
+        return Err("Account not own minecraft".into());
+    }
+
+    Ok(CompleteLoginResponse {
+        id: profile.id,
+        name: profile.name,
+        access_token: account_request.access_token,
+        refresh_token: token_request.refresh_token,
+        skins: profile.skins,
+        capes: profile.capes,
+        error: profile.error,
+        error_message: profile.error_message,
+    })
+}
+
+pub fn complete_refresh(
+    client_id: &str,
+    client_secret: Option<&str>,
+    refresh_token: &str,
+) -> Result<CompleteLoginResponse, Box<dyn std::error::Error>> {
+    let token_request = refresh_authorization_token(client_id, client_secret, refresh_token)?;
+
+    if token_request.error.is_some() {
+        return Err("Invalid Refresh Token.".into());
+    }
+
+    let token = token_request.access_token;
+
+    let xbl_request = authenticate_with_xbl(&token)?;
+    let xbl_token = xbl_request.token;
+    let userhash = xbl_request.display_claims.xui[0].uhs.clone();
+
+    let xsts_request = authenticate_with_xsts(&xbl_token)?;
+    let xsts_token = xsts_request.token;
+
+    let account_request = authenticate_with_minecraft(&userhash, &xsts_token)?;
+    let access_token = account_request.access_token.clone();
+
+    let profile = get_profile(&access_token)?;
+
+    if profile.error == "NOT_FOUND" {
+        return Err("Account not own minecraft".into());
+    }
+
+    Ok(CompleteLoginResponse {
+        id: profile.id,
+        name: profile.name,
+        access_token: account_request.access_token,
+        refresh_token: token_request.refresh_token,
+        skins: profile.skins,
+        capes: profile.capes,
+        error: profile.error,
+        error_message: profile.error_message,
+    })
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    // test with minecraft-console-client public client_id and redirecr_uri
+    const CLIENT_ID: &str = "54473e32-df8f-42e9-a649-9419b0dab9d3";
+    const REDIRECT_URI: &str = "https://mccteam.github.io/redirect.html";
+
+    #[test]
+    fn debug_get_login_url() {
+        dbg!(get_login_url(CLIENT_ID, REDIRECT_URI));
+    }
+
+    #[test]
+    fn debug_generate_pkce_data() {
+        dbg!(generate_pkce_data());
+    }
+
+    #[test]
+    fn debug_get_secure_login_data() {
+        dbg!(get_secure_login_data(CLIENT_ID, REDIRECT_URI, None));
+    }
 
     #[test]
     fn test_code_challenge() {
@@ -337,11 +446,6 @@ mod test {
             code_challenge,
             "Nju8uPgZTErU1OxovBkfsGwykuhtCVCE-dGGhooiD8E".to_string()
         );
-    }
-
-    #[test]
-    fn debug_generate_pkce_data() {
-        println!("{:#?}", generate_pkce_data());
     }
 
     #[test]

@@ -28,17 +28,19 @@ use crate::types::{
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
     path: impl AsRef<Path>,
-) {
-    let minecraft_directory = minecraft_directory.as_ref().canonicalize().unwrap();
-    let path = path.as_ref().canonicalize().unwrap();
+) -> Result<(), Box<dyn std::error::Error>> {
+    let minecraft_directory = minecraft_directory.as_ref();
+    let path = path.as_ref();
 
     if !path.starts_with(&minecraft_directory) {
-        eprintln!(
+        return Err(format!(
             "{} is outside Minecraft directory {}",
             path.to_string_lossy(),
             minecraft_directory.to_string_lossy()
-        );
+        )
+        .into());
     }
+    Ok(())
 }
 
 pub fn download_file(
@@ -46,16 +48,14 @@ pub fn download_file(
     path: impl AsRef<Path>,
     sha1: Option<&str>,
     lzma_compressed: bool,
-    minecraft_directory: Option<&str>,
+    minecraft_directory: Option<impl AsRef<Path>>,
     session: Option<&reqwest::blocking::Client>,
     callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if let Some(mc_dir) = minecraft_directory {
-        check_path_inside_minecraft_directory(mc_dir, &path);
+        check_path_inside_minecraft_directory(mc_dir, &path)?;
     }
-    let path_ref: &Path = path.as_ref();
-    let path_string: String = path_ref.to_string_lossy().into_owned();
-    if Path::new(&path_string).is_file() {
+    if path.as_ref().is_file() {
         match sha1 {
             Some(expected_sha1) => {
                 let actual_sha1 = get_sha1_hash(&path)?;
@@ -66,13 +66,12 @@ pub fn download_file(
             None => return Ok(false),
         }
     }
-
-    if let Some(parent_dir) = Path::new(&path_string).parent() {
+    if let Some(parent_dir) = path.as_ref().parent() {
         let _ = fs::create_dir_all(parent_dir);
     }
 
     if let Some(set_status) = callback.set_status {
-        if let Some(file_name) = Path::new(&path_string).file_name() {
+        if let Some(file_name) = path.as_ref().file_name() {
             if let Some(file_name_str) = file_name.to_str() {
                 set_status(format!("Download {}", file_name_str));
             }
@@ -103,11 +102,11 @@ pub fn download_file(
     }
 
     if let Some(expected_sha1) = sha1 {
-        let actual_sha1 = get_sha1_hash(path)?;
+        let actual_sha1 = get_sha1_hash(&path)?;
         if actual_sha1 != expected_sha1 {
             return Err(Box::new(InvalidChecksum {
                 url: url.to_string(),
-                path: path_string,
+                path: path.as_ref().to_str().unwrap().to_string(),
                 expected: expected_sha1.to_string(),
                 actual: actual_sha1,
             }));
@@ -206,10 +205,11 @@ pub fn inherit_json(
         .as_ref()
         .ok_or("Missing 'inheritsFrom' key")?;
 
-    let mut file_path = path.as_ref().canonicalize()?;
-    file_path.push("versions");
-    file_path.push(inherit_version);
-    file_path.push(format!("{}.json", inherit_version));
+    let mut file_path = path
+        .as_ref()
+        .join("versions")
+        .join(inherit_version)
+        .join(format!("{}.json", inherit_version));
 
     let mut file = File::open(file_path)?;
     let mut file_content = String::new();
@@ -225,17 +225,24 @@ pub fn inherit_json(
 pub fn get_library_path(name: &str, path: impl AsRef<Path>) -> PathBuf {
     let mut libpath = path.as_ref().join("libraries");
     let parts: Vec<&str> = name.split(":").collect();
-    let (base_path, libname, version) = match &parts[..3] {
+    let (base_path, libname, mut version) = match parts[..3] {
         [base_path, libname, version] => (base_path, libname, version),
         _ => panic!("无效的库名称格式"),
     };
     for i in base_path.split('.') {
         libpath = libpath.join(i);
     }
-    let (version, fileend) = match version.split_once('@') {
-        Some((version, fileend)) => (version, fileend),
-        None => ("", "jar"),
+    let mut fileend = "jar";
+    let (ve, fi) = match version.split_once('@') {
+        Some((v, f)) => (v, f),
+        None => ("", ""),
     };
+    if !ve.is_empty() {
+        version = ve;
+    }
+    if !fi.is_empty() {
+        fileend = fi;
+    }
     let filename = format!(
         "{}-{}{}.{}",
         libname,
@@ -392,7 +399,7 @@ pub fn extract_file_from_zip(
     minecraft_directory: Option<&Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(minecraft_directory) = minecraft_directory {
-        check_path_inside_minecraft_directory(minecraft_directory, extract_path);
+        check_path_inside_minecraft_directory(minecraft_directory, extract_path)?;
     }
 
     if let Some(parent) = Path::new(extract_path).parent() {
@@ -455,6 +462,11 @@ mod tests {
         if let Ok(response) = get_requests_response_cache("https://httpbin.org/ip") {
             println!("{:#?}", response);
         }
+    }
+
+    #[test]
+    fn debug_get_classpath_separator() {
+        dbg!(get_classpath_separator());
     }
 
     #[test]

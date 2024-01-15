@@ -38,7 +38,7 @@ pub struct MinecraftOptions {
     pub quick_play_realms: Option<String>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct CallbackDict {
     pub set_status: Option<fn(String)>,
     pub set_progress: Option<fn(i32)>,

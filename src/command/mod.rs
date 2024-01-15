@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
-    runtime::get_executable_path, 
+    runtime::get_executable_path,
     types::{
         shared_types::{ClientJson, StringAndClientJsonArgumentRuleValue, StringAndVecStringValue},
         MinecraftOptions,
@@ -23,8 +23,8 @@ fn get_libraries(data: &ClientJson, path: impl AsRef<Path>) -> String {
             {
                 continue;
             }
-
-            libstr.push_str(&i.name.clone().unwrap_or("".to_string()));
+            let arg_name = i.name.clone().unwrap_or("".to_string());
+            libstr.push_str(get_library_path(&arg_name, &path).to_str().unwrap());
             libstr.push_str(&classpath_separator);
             let native = get_natives(i);
             if !native.is_empty() {
@@ -78,7 +78,6 @@ fn get_libraries(data: &ClientJson, path: impl AsRef<Path>) -> String {
             libstr.push_str(tmp_name.to_str().unwrap());
         }
     }
-
     libstr
 }
 

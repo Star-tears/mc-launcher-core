@@ -163,12 +163,11 @@ impl ClientJson {
         if let Some(inherits_from) = &other.inherits_from {
             self.inherits_from = Some(inherits_from.clone());
         }
-        self.libraries = self.libraries.clone().and_then(|mut a_vec| {
-            other.libraries.clone().map(|b_vec| {
-                a_vec.extend(b_vec);
-                a_vec
-            })
-        });
+        if let Some(libraries) = &other.libraries {
+            let mut tmpv = self.libraries.clone().unwrap_or(vec![]).clone();
+            tmpv.extend_from_slice(&libraries);
+            self.libraries = Some(tmpv);
+        }
 
         if let Some(arguments) = &other.arguments {
             if let Some(self_arguments) = &mut self.arguments {

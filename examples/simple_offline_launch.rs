@@ -1,18 +1,3 @@
-# mc-launcher-core
-
-> This is an mc launcher core written in Rust.
-
-You can use the functions provided by this library to create an mc launcher, offering only basic functionalities.
-
-## Installation
-
-Use `cargo add mc-launcher-core` to add it to your project.
-
-## Example
-
-Here's an example of launching the latest version of mc offline:
-
-```rust
 use std::process::Command;
 
 use mc_launcher_core::{
@@ -54,21 +39,3 @@ fn main() {
         }
     }
 }
-
-```
-
-## Todo list
-
-- [x] Crate library
-- [x] Install original version
-- [x] Offline launch
-- [ ] Microsoft account login
-- [ ] Support for Forge, Fabric, Quilt, and Liteloader
-- [ ] Install of mrpack modpacks
-- [ ] Comprehensive documentation
-
-## Note
-
-- There is still a lot of work to be done in this project. It is recommended to wait for version 0.1.0 before trying it out.
-- The aim of this project is to have a user-friendly launcher SDK library written in Rust.
-- During the development process, I referenced and learned from the minecraft-launcher-lib in Python libraries.
