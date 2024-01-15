@@ -66,7 +66,7 @@ fn install_libraries(
         let mut fileend = "jar".to_string();
         let (ve, fi) = match version.split('@').collect::<Vec<_>>().as_slice() {
             [v, fe] => (v.to_string(), fe.to_string()),
-            _ => ("".to_string(), "to".to_string()),
+            _ => ("".to_string(), "".to_string()),
         };
         if !ve.is_empty() {
             version = ve;
@@ -214,8 +214,12 @@ fn do_version_install(
     path: impl AsRef<Path>,
     url: Option<&str>,
     sha1: Option<&str>,
+    depth: i32,
     callback: &CallbackDict,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if depth > 8 {
+        return Err("so much inherit".into());
+    }
     let version_path = path
         .as_ref()
         .join("versions")
@@ -224,12 +228,11 @@ fn do_version_install(
     if let Some(url) = url {
         let _ = download_file(url, &version_path, sha1, false, Some(&path), None, callback);
     }
-
-    // for forge
     let file = fs::File::open(&version_path)?;
     let mut version_data: ClientJson = serde_json::from_reader(file)?;
+    // for forge
     if let Some(inherits_from) = &version_data.inherits_from {
-        let _ = install_minecraft_version(&inherits_from, &path, callback);
+        let _ = install_minecraft_version_dfs(&inherits_from, path.as_ref(), depth, callback);
         version_data = inherit_json(&version_data, &path)?;
     }
 
@@ -240,7 +243,6 @@ fn do_version_install(
         callback,
     );
     let _ = install_assets(&version_data, &path, callback);
-
     // download minecraft.jar
     let mcjar_path = path
         .as_ref()
@@ -258,7 +260,6 @@ fn do_version_install(
             callback,
         );
     }
-
     // need to copy jar for old forge versions
     if let Some(inherits_from) = &version_data.inherits_from {
         if !mcjar_path.is_file() {
@@ -281,9 +282,10 @@ fn do_version_install(
     Ok(())
 }
 
-pub fn install_minecraft_version(
+fn install_minecraft_version_dfs(
     version_id: &str,
     minecraft_directory: impl AsRef<Path>,
+    depth: i32,
     callback: &CallbackDict,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if minecraft_directory
@@ -293,7 +295,14 @@ pub fn install_minecraft_version(
         .join(format!("{}.json", version_id))
         .is_file()
     {
-        let _ = do_version_install(version_id, &minecraft_directory, None, None, callback);
+        let _ = do_version_install(
+            version_id,
+            &minecraft_directory,
+            None,
+            None,
+            depth + 1,
+            callback,
+        );
         return Ok(());
     }
     let response = get_requests_response_cache(
@@ -307,10 +316,19 @@ pub fn install_minecraft_version(
                 &minecraft_directory,
                 Some(&i.url),
                 Some(&i.sha1),
+                depth + 1,
                 callback,
             );
             return Ok(());
         }
     }
     Err(format!("version not found: {}", version_id).into())
+}
+
+pub fn install_minecraft_version(
+    version_id: &str,
+    minecraft_directory: impl AsRef<Path>,
+    callback: &CallbackDict,
+) -> Result<(), Box<dyn std::error::Error>> {
+    install_minecraft_version_dfs(version_id, minecraft_directory, 0, callback)
 }

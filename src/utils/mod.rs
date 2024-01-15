@@ -44,14 +44,10 @@ pub fn get_latest_version() -> Result<LatestMinecraftVersions, Box<dyn std::erro
     let response = get_requests_response_cache(
         "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
     )?;
-    let res: Value = serde_json::from_str(&response)?;
-    let latest = res["latest"].clone();
-    let release = latest["release"]
-        .as_str()
-        .ok_or_else(|| "Release version not found".to_string())?;
-    let snapshot = latest["snapshot"]
-        .as_str()
-        .ok_or_else(|| "Snapshot version not found".to_string())?;
+    let res: VersionListManifestJson = serde_json::from_str(&response)?;
+    let latest = res.latest;
+    let release = latest.get("release").unwrap();
+    let snapshot = latest.get("snapshot").unwrap();
 
     Ok(LatestMinecraftVersions {
         release: release.to_string(),
