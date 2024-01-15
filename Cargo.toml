@@ -1,6 +1,6 @@
 [package]
 name = "mc-launcher-core"
-version = "0.0.1"
+version = "0.0.2"
 license = "MIT"
 description = "mc launcher core"
 readme = "README.md"

@@ -125,7 +125,7 @@ pub fn install_jvm_runtime(
     let mut file_list: Vec<&String> = vec![];
     for (key, value) in platform_manifest.files.iter() {
         let current_path = base_path.join(key);
-        check_path_inside_minecraft_directory(&minecraft_directory, &current_path);
+        check_path_inside_minecraft_directory(&minecraft_directory, &current_path)?;
         if let Some(vtype) = &value.r#type {
             if vtype == "file" {
                 if let Some(download_info) = &value.downloads {
@@ -162,7 +162,7 @@ pub fn install_jvm_runtime(
                 check_path_inside_minecraft_directory(
                     &minecraft_directory,
                     base_path.join(&value.target.as_ref().map_or("".to_string(), |s| s.clone())),
-                );
+                )?;
                 if !current_path.parent().unwrap().exists() {
                     let _ = fs::create_dir_all(current_path.parent().unwrap());
                 }
@@ -186,7 +186,7 @@ pub fn install_jvm_runtime(
         .join(jvm_version)
         .join(&platform_string)
         .join(".version");
-    check_path_inside_minecraft_directory(&minecraft_directory, &version_path);
+    check_path_inside_minecraft_directory(&minecraft_directory, &version_path)?;
     let mut version_file = fs::File::create(&version_path)?;
     version_file.write_all(
         manifest_data
@@ -207,7 +207,7 @@ pub fn install_jvm_runtime(
         .join(jvm_version)
         .join(platform_string)
         .join(format!("{}.sha1", jvm_version));
-    check_path_inside_minecraft_directory(&minecraft_directory, &sha1_path);
+    check_path_inside_minecraft_directory(&minecraft_directory, &sha1_path)?;
     let mut sha1_file = fs::File::create(&sha1_path)?;
     for file in file_list {
         let current_path = base_path.join(file);

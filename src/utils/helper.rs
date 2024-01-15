@@ -28,17 +28,19 @@ use crate::types::{
 pub fn check_path_inside_minecraft_directory(
     minecraft_directory: impl AsRef<Path>,
     path: impl AsRef<Path>,
-) {
-    let minecraft_directory = minecraft_directory.as_ref().canonicalize().unwrap();
-    let path = path.as_ref().canonicalize().unwrap();
+) -> Result<(), Box<dyn std::error::Error>> {
+    let minecraft_directory = minecraft_directory.as_ref();
+    let path = path.as_ref();
 
     if !path.starts_with(&minecraft_directory) {
-        eprintln!(
+        return Err(format!(
             "{} is outside Minecraft directory {}",
             path.to_string_lossy(),
             minecraft_directory.to_string_lossy()
-        );
+        )
+        .into());
     }
+    Ok(())
 }
 
 pub fn download_file(
@@ -51,11 +53,9 @@ pub fn download_file(
     callback: &CallbackDict,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     if let Some(mc_dir) = minecraft_directory {
-        check_path_inside_minecraft_directory(mc_dir, &path);
+        check_path_inside_minecraft_directory(mc_dir, &path)?;
     }
-    let path_ref: &Path = path.as_ref();
-    let path_string: String = path_ref.to_string_lossy().into_owned();
-    if Path::new(&path_string).is_file() {
+    if path.as_ref().is_file() {
         match sha1 {
             Some(expected_sha1) => {
                 let actual_sha1 = get_sha1_hash(&path)?;
@@ -66,13 +66,12 @@ pub fn download_file(
             None => return Ok(false),
         }
     }
-
-    if let Some(parent_dir) = Path::new(&path_string).parent() {
+    if let Some(parent_dir) = path.as_ref().parent() {
         let _ = fs::create_dir_all(parent_dir);
     }
 
     if let Some(set_status) = callback.set_status {
-        if let Some(file_name) = Path::new(&path_string).file_name() {
+        if let Some(file_name) = path.as_ref().file_name() {
             if let Some(file_name_str) = file_name.to_str() {
                 set_status(format!("Download {}", file_name_str));
             }
@@ -103,11 +102,11 @@ pub fn download_file(
     }
 
     if let Some(expected_sha1) = sha1 {
-        let actual_sha1 = get_sha1_hash(path)?;
+        let actual_sha1 = get_sha1_hash(&path)?;
         if actual_sha1 != expected_sha1 {
             return Err(Box::new(InvalidChecksum {
                 url: url.to_string(),
-                path: path_string,
+                path: path.as_ref().to_str().unwrap().to_string(),
                 expected: expected_sha1.to_string(),
                 actual: actual_sha1,
             }));
@@ -400,7 +399,7 @@ pub fn extract_file_from_zip(
     minecraft_directory: Option<&Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(minecraft_directory) = minecraft_directory {
-        check_path_inside_minecraft_directory(minecraft_directory, extract_path);
+        check_path_inside_minecraft_directory(minecraft_directory, extract_path)?;
     }
 
     if let Some(parent) = Path::new(extract_path).parent() {
