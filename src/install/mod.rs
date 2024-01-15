@@ -3,11 +3,11 @@ use std::{collections::HashMap, fs, path::Path};
 use crate::{
     types::{
         install_types::AssetsJson,
-        shared_types::{ClientJson, ClientJsonLibrary},
+        shared_types::{ClientJson, ClientJsonLibrary, VersionListManifestJson},
         CallbackDict, MinecraftOptions,
     },
     utils::{
-        helper::{download_file, parse_rule_list},
+        helper::{download_file, get_requests_response_cache, parse_rule_list},
         natives::{extract_natives_file, get_natives},
     },
 };
@@ -203,4 +203,47 @@ fn install_assets(
         }
     }
     Ok(())
+}
+
+fn do_version_install(
+    version_id: &str,
+    path: impl AsRef<Path>,
+    url: Option<&str>,
+    sha1: Option<&str>,
+    callback: &CallbackDict,
+) {
+}
+
+pub fn install_minecraft_version(
+    version_id: &str,
+    minecraft_directory: impl AsRef<Path>,
+    callback: &CallbackDict,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if minecraft_directory
+        .as_ref()
+        .join("versions")
+        .join(version_id)
+        .join(format!("{}.json", version_id))
+        .is_file()
+    {
+        do_version_install(version_id, &minecraft_directory, None, None, callback);
+        return Ok(());
+    }
+    let response = get_requests_response_cache(
+        "https://launchermeta.mojang.com/mc/game/version_manifest_v2.json",
+    )?;
+    let version_list: VersionListManifestJson = serde_json::from_str(&response)?;
+    for i in version_list.versions {
+        if i.id == version_id {
+            do_version_install(
+                version_id,
+                &minecraft_directory,
+                Some(&i.url),
+                Some(&i.sha1),
+                callback,
+            );
+            return Ok(());
+        }
+    }
+    Err(format!("version not found: {}", version_id).into())
 }
