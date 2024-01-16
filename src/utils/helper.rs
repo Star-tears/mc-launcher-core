@@ -339,6 +339,7 @@ pub fn get_requests_response_cache(url: &str) -> Result<String, reqwest::Error> 
             cache.insert(url.to_string(), cache_entry);
             return Ok(res);
         }
+        return Ok(cache_entry.response.clone());
     }
 
     let response = reqwest::blocking::get(url)?.text()?;
