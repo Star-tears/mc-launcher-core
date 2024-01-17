@@ -219,7 +219,9 @@ pub fn refresh_authorization_token(
     Ok(token_response)
 }
 
-pub fn authenticate_with_xbl(access_token: &str) -> Result<XBLResponse, reqwest::Error> {
+pub fn authenticate_with_xbl(
+    access_token: &str,
+) -> Result<XBLResponse, Box<dyn std::error::Error>> {
     let mut parameters = HashMap::new();
     parameters.insert(
         "Properties",
@@ -303,7 +305,9 @@ pub fn get_store_information(access_token: &str) -> Result<MinecraftStoreRespons
     Ok(store_response)
 }
 
-pub fn get_profile(access_token: &str) -> Result<MinecraftProfileResponse, reqwest::Error> {
+pub fn get_profile(
+    access_token: &str,
+) -> Result<MinecraftProfileResponse, Box<dyn std::error::Error>> {
     let client = Client::new();
     let res = client
         .get("https://api.minecraftservices.com/minecraft/profile")
@@ -348,7 +352,7 @@ pub fn complete_login(
 
     let profile = get_profile(&access_token)?;
 
-    if profile.error == "NOT_FOUND" {
+    if profile.error == Some("NOT_FOUND".to_string()) {
         return Err("Account not own minecraft".into());
     }
 
@@ -389,7 +393,7 @@ pub fn complete_refresh(
 
     let profile = get_profile(&access_token)?;
 
-    if profile.error == "NOT_FOUND" {
+    if profile.error == Some("NOT_FOUND".to_string()) {
         return Err("Account not own minecraft".into());
     }
 

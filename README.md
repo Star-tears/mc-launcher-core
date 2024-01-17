@@ -62,7 +62,7 @@ fn main() {
 - [x] Crate library
 - [x] Install original version
 - [x] Offline launch
-- [ ] Microsoft account login
+- [x] Microsoft account login
 - [ ] Support for Forge, Fabric, Quilt, and Liteloader
 - [ ] Install of mrpack modpacks
 - [ ] Comprehensive documentation

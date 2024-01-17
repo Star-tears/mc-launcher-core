@@ -1,8 +1,8 @@
 [package]
 name = "mc-launcher-core"
-version = "0.0.2"
+version = "0.0.3"
 license = "MIT"
-description = "mc launcher core"
+description = "This is an mc launcher core written in Rust."
 readme = "README.md"
 homepage = "https://github.com/Star-tears/mc-launcher-core"
 repository = "https://github.com/Star-tears/mc-launcher-core"

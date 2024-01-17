@@ -4,7 +4,6 @@ use std::{env, fs};
 
 use chrono::{DateTime, TimeZone, Utc};
 use rand::Rng;
-use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::shared_types::{ClientJson, VersionListManifestJson};
