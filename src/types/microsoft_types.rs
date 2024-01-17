@@ -41,7 +41,7 @@ pub struct XSTSResponse {
     pub not_after: String,
     #[serde(rename = "Token")]
     pub token: String,
-    #[serde(rename = "DisplayClaimns")]
+    #[serde(rename = "DisplayClaims")]
     pub display_claimns: DisplayClaims,
 }
 
@@ -97,8 +97,8 @@ pub struct MinecraftProfileResponse {
     pub name: String,
     pub skins: Vec<MinecraftProfileSkin>,
     pub capes: Vec<MinecraftProfileCape>,
-    pub error: String,
-    pub error_message: String,
+    pub error: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -107,8 +107,8 @@ pub struct CompleteLoginResponse {
     pub name: String,
     pub skins: Vec<MinecraftProfileSkin>,
     pub capes: Vec<MinecraftProfileCape>,
-    pub error: String,
-    pub error_message: String,
+    pub error: Option<String>,
+    pub error_message: Option<String>,
     pub access_token: String,
     pub refresh_token: String,
 }
