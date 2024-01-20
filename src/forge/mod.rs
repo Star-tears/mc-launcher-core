@@ -1,6 +1,6 @@
 use std::{path::Path, io, fs, process::Command};
 
-use crate::{utils::helper::download_file, types::CallbackDict};
+use crate::{utils::helper::{download_file, parse_maven_metadata}, types::CallbackDict};
 
 fn get_data_library_path(libname: &str, path: impl AsRef<Path>) -> String {
     let libname = &libname[1..libname.len() - 1];
@@ -51,6 +51,11 @@ pub fn run_forge_installer(version: &str, java: Option<impl AsRef<Path>>) -> Res
     fs::remove_file(&temp_file_path)?;
 
     Ok(())
+}
+
+pub fn list_forge_versions() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let maven_metadata_url = "https://files.minecraftforge.net/maven/net/minecraftforge/forge/maven-metadata.xml";
+    Ok(parse_maven_metadata(maven_metadata_url)?.versions)
 }
 
 
