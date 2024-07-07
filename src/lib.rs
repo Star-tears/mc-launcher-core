@@ -4,3 +4,4 @@ pub mod runtime;
 pub mod command;
 pub mod auth;
 pub mod install;
+pub mod forge;
