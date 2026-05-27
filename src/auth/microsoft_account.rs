@@ -1,8 +1,8 @@
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 use reqwest::blocking::Client;
-use ring::digest;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use url::Url;
 
@@ -35,9 +35,9 @@ pub fn get_login_url(client_id: &str, redirect_uri: &str) -> String {
 }
 
 fn generate_pkce_data() -> (String, String, String) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let chars: Vec<char> = (0..128)
-        .map(|_| match rng.gen_range(0..64) {
+        .map(|_| match rng.random_range(0..64) {
             0 => '-',
             1 => '_',
             _ => rng.sample(Alphanumeric) as char,
@@ -45,8 +45,8 @@ fn generate_pkce_data() -> (String, String, String) {
         .collect();
     let code_verifier: String = chars.iter().collect();
 
-    let digest = digest::digest(&digest::SHA256, code_verifier.as_bytes());
-    let code_challenge = URL_SAFE_NO_PAD.encode(digest.as_ref());
+    let digest = Sha256::digest(code_verifier.as_bytes());
+    let code_challenge = URL_SAFE_NO_PAD.encode(digest);
     code_challenge.trim_end_matches('=').to_string();
     let code_challenge_method = "S256".to_string();
 
@@ -54,9 +54,9 @@ fn generate_pkce_data() -> (String, String, String) {
 }
 
 pub fn generate_state() -> String {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let chars: Vec<char> = (0..16)
-        .map(|_| match rng.gen_range(0..64) {
+        .map(|_| match rng.random_range(0..64) {
             0 => '-',
             1 => '_',
             _ => rng.sample(Alphanumeric) as char,
@@ -435,16 +435,16 @@ mod test {
     #[test]
     fn test_code_challenge() {
         let code_verifier: String = "7BSNrJnbWnVrx9Y3uoBEJmrd0eii9ZBEQ5AVw_j4lzIlnsxwTDLJdtaiuCdrkJZ4fVH-E3v_hP7ynwS4zIwrSVCzG7vr5MTXahwESJnsb3SFM5zpdNjj525JbjrUwctt".to_string();
-        let digest = digest::digest(&digest::SHA256, code_verifier.as_bytes());
-        let code_challenge = URL_SAFE_NO_PAD.encode(digest.as_ref());
+        let digest = Sha256::digest(code_verifier.as_bytes());
+        let code_challenge = URL_SAFE_NO_PAD.encode(digest);
         code_challenge.trim_end_matches('=').to_string();
         assert_eq!(
             code_challenge,
             "bOQuaNvcR9utb6HhxpkDuvJr4Wh83ugr_FnH4dvTg9I".to_string()
         );
         let code_verifier: String = "sL0L64E7Qk_TANBue-ejOajO7LP3dcVI64ZgsjMsfV5dMhuDoFgb0Ldb4b7U3EXqBldbZJEAMJoxE8NfFmvm2oimm2FDQhy2qPDEoWUsY60mXF1poaw5cwvnpK-dXSFB".to_string();
-        let digest = digest::digest(&digest::SHA256, code_verifier.as_bytes());
-        let code_challenge = URL_SAFE_NO_PAD.encode(digest.as_ref());
+        let digest = Sha256::digest(code_verifier.as_bytes());
+        let code_challenge = URL_SAFE_NO_PAD.encode(digest);
         code_challenge.trim_end_matches('=').to_string();
         assert_eq!(
             code_challenge,

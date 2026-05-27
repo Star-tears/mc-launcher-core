@@ -1,11 +1,11 @@
 use chrono::Utc;
-use crypto::{digest::Digest, sha1::Sha1};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::{
     blocking::{Client, Response},
     header,
 };
+use sha1::{Digest, Sha1};
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -14,6 +14,7 @@ use std::{
     sync::Mutex,
 };
 use sysinfo::System;
+#[cfg(windows)]
 use winver::WindowsVersion;
 use xz2::read::XzDecoder;
 use zip::ZipArchive;
@@ -136,10 +137,9 @@ fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool 
             }
         }
         if let Some(arch) = os.get("arch") {
-            if let Some(arch_info) = System::cpu_arch() {
-                if arch == "x86" && arch_info != "x86" {
-                    return return_value;
-                }
+            let arch_info = System::cpu_arch();
+            if arch == "x86" && arch_info != "x86" {
+                return return_value;
             }
         }
         if let Some(version) = os.get("version") {
@@ -205,7 +205,7 @@ pub fn inherit_json(
         .as_ref()
         .ok_or("Missing 'inheritsFrom' key")?;
 
-    let mut file_path = path
+    let file_path = path
         .as_ref()
         .join("versions")
         .join(inherit_version)
@@ -293,25 +293,32 @@ pub fn get_sha1_hash(path: impl AsRef<Path>) -> Result<String, Box<dyn std::erro
         if bytes_read == 0 {
             break;
         }
-        sha1.input(&buffer[..bytes_read]);
+        sha1.update(&buffer[..bytes_read]);
     }
 
-    Ok(sha1.result_str())
+    Ok(sha1
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
 }
 
 pub fn get_os_version() -> String {
-    if std::env::consts::OS == "windows" {
+    #[cfg(windows)]
+    {
         let version = WindowsVersion::detect().unwrap();
         return format!("{}.{}", version.major, version.minor);
     }
-    System::os_version().expect("failed get os version")
+
+    #[cfg(not(windows))]
+    {
+        System::os_version().unwrap_or_else(|| "unknown".to_string())
+    }
 }
 
-lazy_static! {
-    static ref REQUESTS_RESPONSE_CACHE: Mutex<HashMap<String, RequestsResponseCache>> =
-        Mutex::new(HashMap::new());
-    static ref USER_AGENT_CACHE: Mutex<Option<String>> = Mutex::new(None);
-}
+static REQUESTS_RESPONSE_CACHE: Lazy<Mutex<HashMap<String, RequestsResponseCache>>> =
+    Lazy::new(|| Mutex::new(HashMap::new()));
+static USER_AGENT_CACHE: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 // return the user agent of mc-launcher-core
 pub fn get_user_agent() -> String {
@@ -328,7 +335,7 @@ pub fn get_user_agent() -> String {
 pub fn get_requests_response_cache(url: &str) -> Result<String, reqwest::Error> {
     let mut cache = REQUESTS_RESPONSE_CACHE.lock().unwrap();
     if let Some(cache_entry) = cache.get(url) {
-        let elapsed = Utc::now() - cache_entry.datetime;
+        let elapsed = Utc::now().signed_duration_since(cache_entry.datetime);
         if elapsed.num_seconds() > 3600 {
             let response = reqwest::blocking::get(url)?.text()?;
             let res = response.clone();

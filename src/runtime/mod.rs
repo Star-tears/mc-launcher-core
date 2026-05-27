@@ -169,8 +169,9 @@ pub fn install_jvm_runtime(
                 // Create a symbolic link at `link_path` pointing to `target`
                 #[cfg(unix)]
                 {
-                    let _ =
-                        std::os::unix::fs::symlink(Path::new(value.target.unwrap()), &current_path);
+                    if let Some(target) = value.target.as_ref() {
+                        let _ = std::os::unix::fs::symlink(Path::new(target), &current_path);
+                    }
                 }
             }
             if let Some(set_progresss) = callback.set_progress {

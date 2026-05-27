@@ -1,4 +1,4 @@
-use std::{fmt, error::Error};
+use std::{error::Error, fmt};
 
 #[derive(Debug)]
 pub struct InvalidChecksum {
@@ -7,7 +7,6 @@ pub struct InvalidChecksum {
     pub expected: String,
     pub actual: String,
 }
-
 
 impl fmt::Display for InvalidChecksum {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

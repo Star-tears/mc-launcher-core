@@ -188,7 +188,7 @@ pub fn get_core_version() -> String {
 }
 
 pub fn generate_test_options() -> MinecraftOptions {
-    let username = format!("Player{}", rand::thread_rng().gen_range(100..1000));
+    let username = format!("Player{}", rand::rng().random_range(100..1000));
     let uuid = Uuid::new_v4();
     let token = String::new();
 

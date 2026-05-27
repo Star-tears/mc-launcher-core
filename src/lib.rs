@@ -1,7 +1,19 @@
+pub mod account;
+pub mod auth;
+pub mod command;
+pub mod core;
+pub mod error;
+pub mod forge;
+pub mod install;
+pub mod io;
+pub mod launcher;
+pub mod loader;
+pub mod net;
+pub mod platform;
+pub mod prelude;
+pub mod progress;
+pub mod runtime;
 pub mod types;
 pub mod utils;
-pub mod runtime;
-pub mod command;
-pub mod auth;
-pub mod install;
-pub mod forge;
+
+pub use error::{LauncherError, Result};

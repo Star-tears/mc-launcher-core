@@ -11,7 +11,7 @@ use crate::types::{
 use super::helper::{get_library_path, inherit_json, parse_rule_list};
 
 pub fn get_natives(data: &ClientJsonLibrary) -> String {
-    let arch_type = if System::cpu_arch().unwrap_or_default() == "x86" {
+    let arch_type = if System::cpu_arch() == "x86" {
         "32"
     } else {
         "64"
