@@ -1,0 +1,38 @@
+{
+  "id": "1.20.4",
+  "type": "release",
+  "mainClass": "net.minecraft.client.main.Main",
+  "minimumLauncherVersion": 21,
+  "assets": "12",
+  "assetIndex": {
+    "id": "12",
+    "sha1": "asset-index-sha1",
+    "size": 1,
+    "totalSize": 1,
+    "url": "https://example.invalid/assets/12.json"
+  },
+  "downloads": {
+    "client": {
+      "sha1": "client-sha1",
+      "size": 1,
+      "url": "https://example.invalid/client.jar"
+    }
+  },
+  "libraries": [
+    {
+      "name": "com.example:demo:1.0",
+      "downloads": {
+        "artifact": {
+          "path": "com/example/demo/1.0/demo-1.0.jar",
+          "sha1": "demo-sha1",
+          "size": 1,
+          "url": "https://example.invalid/demo-1.0.jar"
+        }
+      }
+    }
+  ],
+  "arguments": {
+    "jvm": ["-cp", "${classpath}"],
+    "game": ["--username", "${auth_player_name}"]
+  }
+}

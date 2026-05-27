@@ -1,3 +1,10 @@
+pub mod assets;
+pub mod libraries;
+pub mod request;
+pub mod vanilla;
+
+pub use request::{InstallRequest, InstallResult, JavaInstallPolicy};
+
 use std::{collections::HashMap, fs, path::Path};
 
 use crate::{
