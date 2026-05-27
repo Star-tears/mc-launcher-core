@@ -1,0 +1,21 @@
+{
+  "id": "fabric-loader-0.15.7-1.20.4",
+  "inheritsFrom": "1.20.4",
+  "type": "release",
+  "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+  "minimumLauncherVersion": 21,
+  "arguments": {
+    "game": [],
+    "jvm": ["-DFabricMcEmu= net.minecraft.client.main.Main "]
+  },
+  "libraries": [
+    {
+      "name": "net.fabricmc:intermediary:1.20.4",
+      "url": "https://maven.fabricmc.net/"
+    },
+    {
+      "name": "net.fabricmc:fabric-loader:0.15.7",
+      "url": "https://maven.fabricmc.net/"
+    }
+  ]
+}

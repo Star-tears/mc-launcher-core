@@ -1,0 +1,20 @@
+{
+  "id": "quilt-loader-0.23.1-1.20.4",
+  "inheritsFrom": "1.20.4",
+  "type": "release",
+  "mainClass": "org.quiltmc.loader.impl.launch.knot.KnotClient",
+  "minimumLauncherVersion": 21,
+  "arguments": {
+    "game": []
+  },
+  "libraries": [
+    {
+      "name": "org.quiltmc:quilt-loader:0.23.1",
+      "url": "https://maven.quiltmc.org/repository/release/"
+    },
+    {
+      "name": "net.fabricmc:intermediary:1.20.4",
+      "url": "https://maven.fabricmc.net/"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+[
+  {
+    "maven": "org.quiltmc:quilt-loader:0.30.0-beta.7",
+    "version": "0.30.0-beta.7",
+    "build": 7,
+    "separator": ".",
+    "file_size": 3105471,
+    "hashes": {
+      "sha1": "03400329bebe2445ea9d102f18adeffe368a0d67"
+    }
+  },
+  {
+    "maven": "org.quiltmc:quilt-loader:0.29.4",
+    "version": "0.29.4",
+    "build": 4,
+    "separator": ".",
+    "file_size": 3105471,
+    "hashes": {
+      "sha1": "1111111111111111111111111111111111111111"
+    }
+  }
+]
