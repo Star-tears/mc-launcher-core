@@ -1,1 +1,4 @@
-//! Network scaffold; concrete behavior is added by later plan tasks.
+//! Network helpers.
+
+pub mod download;
+pub mod http;

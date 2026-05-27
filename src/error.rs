@@ -21,6 +21,11 @@ pub enum LauncherError {
         #[from]
         source: serde_json::Error,
     },
+    #[error("zip error: {source}")]
+    Zip {
+        #[from]
+        source: zip::result::ZipError,
+    },
     #[error("invalid version id: {id}")]
     InvalidVersionId { id: String },
     #[error("unsupported platform: {os}/{arch}")]
