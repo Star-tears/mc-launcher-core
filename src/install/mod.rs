@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod libraries;
+pub mod loader;
 pub mod request;
 pub mod vanilla;
 
