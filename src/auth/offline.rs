@@ -1,8 +1,15 @@
-use uuid::Uuid;
+use crate::{account::Account, types::MinecraftOptions};
 
-use crate::types::MinecraftOptions;
+pub fn get_offline_account(user_name: &str) -> Account {
+    Account::offline(user_name)
+}
 
+#[deprecated(note = "use Account::offline")]
 pub fn get_offline_options(user_name: &str) -> MinecraftOptions {
-    let user_uuid = Uuid::new_v4();
-    MinecraftOptions::new(user_name.to_string(), user_uuid.to_string(), "".to_string())
+    let account = Account::offline(user_name);
+    MinecraftOptions::new(
+        account.username().to_string(),
+        account.uuid().to_string(),
+        account.access_token().to_string(),
+    )
 }
