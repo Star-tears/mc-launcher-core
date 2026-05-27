@@ -1,1 +1,4 @@
-//! IO scaffold; concrete behavior is added by later plan tasks.
+//! IO helpers for launcher data.
+
+pub mod hash;
+pub mod paths;
