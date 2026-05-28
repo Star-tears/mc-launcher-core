@@ -84,6 +84,8 @@ pub fn replace_placeholders(raw: &str, context: &ArgumentContext<'_>) -> String 
             "${auth_access_token}",
             context.account.access_token().to_string(),
         ),
+        ("${clientid}", String::new()),
+        ("${auth_xuid}", String::new()),
         ("${user_type}", "msa".to_string()),
         ("${version_type}", context.version_type.to_string()),
         ("${user_properties}", "{}".to_string()),
