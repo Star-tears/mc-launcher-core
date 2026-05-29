@@ -80,6 +80,31 @@ still create a 0x0 invisible window. A desktop launcher should run these
 versions from a real macOS app bundle or equivalent GUI host, then verify that a
 visible game window was created.
 
+For launchers that want the built-in Launch Services host bundle, wrap the
+normal launch command before spawning it:
+
+```rust
+let compatibility =
+    apply_compatibility(&version_json, Platform::current(), CompatibilityPolicy::Auto);
+let command = launcher.build_launch_command_from_version(&version_json, LaunchOptions {
+    account: Account::offline("Steve"),
+    ..Default::default()
+})?;
+let command = if compatibility.windowing.strategy == WindowingStrategy::MacOsAppBundle {
+    launcher
+        .prepare_macos_app_bundle_launch(&command, MacOsAppBundleOptions::default())?
+        .open_command
+} else {
+    command
+};
+```
+
+`MacOsAppBundleOptions` can also set `stdout_path` and `stderr_path`, which is
+useful because GUI app output is otherwise easy to lose. The built-in bundle is
+a lightweight host and diagnostic bridge; very old LWJGL 2 builds should still
+be verified with a real visible-window check, and launchers may need to provide
+a native macOS app host if Java AWT fails during menu initialization.
+
 ## Todo list
 
 - [x] Crate library

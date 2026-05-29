@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    command::builder::{build_launch_command, LaunchCommand, LaunchOptions},
+    command::{
+        builder::{build_launch_command, LaunchCommand, LaunchOptions},
+        macos_app::{prepare_macos_app_bundle, MacOsAppBundle, MacOsAppBundleOptions},
+    },
     core::version::VersionJson,
     install::{
         loader::{run_loader_installer, write_loader_profile, InstallerInvocation},
@@ -116,6 +119,42 @@ impl Launcher {
         options: LaunchOptions,
     ) -> Result<LaunchCommand> {
         build_launch_command(version, self.minecraft_dir.clone(), options)
+    }
+
+    /// Prepare a macOS `.app` host bundle under this launcher's Minecraft directory.
+    pub fn prepare_macos_app_bundle_launch(
+        &self,
+        command: &LaunchCommand,
+        options: MacOsAppBundleOptions,
+    ) -> Result<MacOsAppBundle> {
+        let bundle_path = self
+            .minecraft_dir
+            .join("launcher-hosts")
+            .join("macos")
+            .join(format!(
+                "{}.app",
+                macos_bundle_directory_name(&options.bundle_name)
+            ));
+        prepare_macos_app_bundle(command, bundle_path, options)
+    }
+}
+
+fn macos_bundle_directory_name(name: &str) -> String {
+    let sanitized = name
+        .chars()
+        .map(|character| match character {
+            '/' | '\\' | ':' => '_',
+            character if character.is_control() => '_',
+            character => character,
+        })
+        .collect::<String>()
+        .trim()
+        .to_string();
+
+    if sanitized.is_empty() {
+        MacOsAppBundleOptions::default().bundle_name
+    } else {
+        sanitized
     }
 }
 

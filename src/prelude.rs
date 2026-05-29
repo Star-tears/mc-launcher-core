@@ -1,6 +1,7 @@
 pub use crate::{
     account::Account,
     command::builder::{LaunchCommand, LaunchOptions},
+    command::macos_app::{prepare_macos_app_bundle, MacOsAppBundle, MacOsAppBundleOptions},
     compatibility::{
         CompatibilityPatch, CompatibilityPolicy, CompatibilityResult, JavaRuntimeHint,
         WindowingHint, WindowingStrategy,
@@ -12,5 +13,6 @@ pub use crate::{
         common::{LoaderSpec, LoaderVersion},
         LoaderKind,
     },
+    platform::{Arch, Os, Platform},
     progress::{ProgressEvent, ProgressReporter},
 };

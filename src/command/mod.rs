@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod macos_app;
 
 use std::{fs, path::Path};
 
