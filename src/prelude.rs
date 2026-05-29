@@ -1,6 +1,9 @@
 pub use crate::{
     account::Account,
     command::builder::{LaunchCommand, LaunchOptions},
+    compatibility::{
+        CompatibilityPatch, CompatibilityPolicy, CompatibilityResult, JavaRuntimeHint,
+    },
     error::{LauncherError, Result},
     install::request::{InstallRequest, InstallResult, JavaInstallPolicy},
     launcher::Launcher,

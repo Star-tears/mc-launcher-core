@@ -1,6 +1,7 @@
 pub mod account;
 pub mod auth;
 pub mod command;
+pub mod compatibility;
 pub mod core;
 pub mod error;
 pub mod forge;

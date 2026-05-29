@@ -2,13 +2,14 @@ use std::path::PathBuf;
 
 use crate::{
     account::Account,
+    compatibility::{apply_compatibility, CompatibilityPolicy},
     core::{
         arguments::{evaluate_arguments, ArgumentContext},
-        classpath::{classpath_entries, classpath_string},
+        classpath::{classpath_entries_for_platform, classpath_string},
         rules::FeatureSet,
         version::VersionJson,
     },
-    platform::Platform,
+    platform::{Os, Platform},
     LauncherError, Result,
 };
 
@@ -25,6 +26,7 @@ pub struct LaunchOptions {
     pub server: Option<(String, Option<u16>)>,
     pub disable_multiplayer: bool,
     pub disable_chat: bool,
+    pub compatibility: CompatibilityPolicy,
 }
 
 impl Default for LaunchOptions {
@@ -41,6 +43,7 @@ impl Default for LaunchOptions {
             server: None,
             disable_multiplayer: false,
             disable_chat: false,
+            compatibility: CompatibilityPolicy::Auto,
         }
     }
 }
@@ -64,6 +67,17 @@ pub fn build_launch_command(
     minecraft_dir: PathBuf,
     options: LaunchOptions,
 ) -> Result<LaunchCommand> {
+    build_launch_command_for_platform(version, minecraft_dir, options, Platform::current())
+}
+
+pub fn build_launch_command_for_platform(
+    version: &VersionJson,
+    minecraft_dir: PathBuf,
+    options: LaunchOptions,
+    platform: Platform,
+) -> Result<LaunchCommand> {
+    let compatibility = apply_compatibility(version, platform, options.compatibility);
+    let version = &compatibility.version;
     let version_id = version
         .id
         .as_deref()
@@ -89,7 +103,7 @@ pub fn build_launch_command(
             .join(version_id)
             .join("natives")
     });
-    let entries = classpath_entries(version, &minecraft_dir)?;
+    let entries = classpath_entries_for_platform(version, &minecraft_dir, platform)?;
     let classpath = classpath_string(&entries);
     let assets_index = version.assets.as_deref().unwrap_or(version_id);
     let version_type = version.r#type.as_deref().unwrap_or("release");
@@ -116,12 +130,14 @@ pub fn build_launch_command(
     let executable = options
         .java_executable
         .unwrap_or_else(|| PathBuf::from("java"));
-    let mut args = evaluate_arguments(
-        &version.arguments.jvm,
-        &context,
-        &features,
-        Platform::current(),
-    );
+    let mut args = evaluate_arguments(&version.arguments.jvm, &context, &features, platform);
+    if args.is_empty() {
+        args.extend(default_legacy_jvm_arguments(
+            &natives_dir,
+            &classpath,
+            platform,
+        ));
+    }
     args.push(main_class);
 
     if version.minecraft_arguments.is_some() {
@@ -137,7 +153,7 @@ pub fn build_launch_command(
             &version.arguments.game,
             &context,
             &features,
-            Platform::current(),
+            platform,
         ));
     }
 
@@ -171,4 +187,19 @@ pub fn build_launch_command(
         working_dir: game_dir,
         env: Vec::new(),
     })
+}
+
+fn default_legacy_jvm_arguments(
+    natives_dir: &std::path::Path,
+    classpath: &str,
+    platform: Platform,
+) -> Vec<String> {
+    let mut args = Vec::new();
+    if platform.os == Os::MacOs {
+        args.push("-XstartOnFirstThread".to_string());
+    }
+    args.push(format!("-Djava.library.path={}", natives_dir.display()));
+    args.push("-cp".to_string());
+    args.push(classpath.to_string());
+    args
 }

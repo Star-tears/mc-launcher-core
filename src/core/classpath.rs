@@ -1,7 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    core::{maven::MavenCoordinate, version::VersionJson},
+    core::{
+        maven::MavenCoordinate,
+        rules::{evaluate_rules, FeatureSet},
+        version::VersionJson,
+    },
+    platform::Platform,
     Result,
 };
 
@@ -9,16 +14,35 @@ pub fn classpath_entries(
     version: &VersionJson,
     minecraft_dir: impl AsRef<Path>,
 ) -> Result<Vec<PathBuf>> {
+    classpath_entries_for_platform(version, minecraft_dir, Platform::current())
+}
+
+pub fn classpath_entries_for_platform(
+    version: &VersionJson,
+    minecraft_dir: impl AsRef<Path>,
+    platform: Platform,
+) -> Result<Vec<PathBuf>> {
     let minecraft_dir = minecraft_dir.as_ref();
     let mut entries = Vec::new();
 
     for library in &version.libraries {
-        let coordinate = MavenCoordinate::parse(&library.name)?;
-        entries.push(
-            minecraft_dir
-                .join("libraries")
-                .join(coordinate.artifact_path()),
-        );
+        if !evaluate_rules(&library.rules, platform, &FeatureSet::default()) {
+            continue;
+        }
+        if let Some(artifact) = library
+            .downloads
+            .as_ref()
+            .and_then(|downloads| downloads.artifact.as_ref())
+        {
+            entries.push(minecraft_dir.join("libraries").join(&artifact.path));
+        } else if library.natives.is_none() {
+            let coordinate = MavenCoordinate::parse(&library.name)?;
+            entries.push(
+                minecraft_dir
+                    .join("libraries")
+                    .join(coordinate.artifact_path()),
+            );
+        }
     }
 
     let jar_id = version.jar.as_ref().or(version.id.as_ref());

@@ -51,6 +51,25 @@ fn main() -> mc_launcher_core::Result<()> {
 }
 ```
 
+## Compatibility
+
+On macOS Apple Silicon, Minecraft versions that still use LWJGL 2 need extra
+compatibility handling. By default, launch command building and vanilla download
+planning apply the legacy macOS arm64 patch automatically when a version uses
+`org.lwjgl.lwjgl`.
+
+The patch replaces the old LWJGL 2, Java Objective-C bridge, and input-related
+libraries with the ManyMC/MinecraftMachina arm64-compatible metadata. It also
+adds the missing legacy JVM arguments such as `-XstartOnFirstThread`,
+`-Djava.library.path`, and `-cp` for versions that still use
+`minecraftArguments`.
+
+The library does not bundle a Java runtime. For these legacy versions on Apple
+Silicon, use an arm64 Java 8 runtime such as Azul Zulu Java 8 and pass it via
+`LaunchOptions::java_executable`. Set `LaunchOptions::compatibility` or
+`plan_vanilla_downloads_for_platform` to `CompatibilityPolicy::Disabled` if a
+launcher wants to manage these patches itself.
+
 ## Todo list
 
 - [x] Crate library
