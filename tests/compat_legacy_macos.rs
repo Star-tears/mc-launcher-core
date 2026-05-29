@@ -3,7 +3,9 @@ use std::path::PathBuf;
 use mc_launcher_core::{
     account::Account,
     command::builder::{build_launch_command_for_platform, LaunchOptions},
-    compatibility::{apply_compatibility, CompatibilityPatch, CompatibilityPolicy},
+    compatibility::{
+        apply_compatibility, CompatibilityPatch, CompatibilityPolicy, WindowingStrategy,
+    },
     core::{classpath::classpath_entries, version::VersionJson},
     install::vanilla::plan_vanilla_downloads_for_platform,
     platform::{Arch, Os, Platform},
@@ -106,6 +108,36 @@ fn recommends_legacy_lwjgl2_patch_only_for_macos_arm64() {
 
     let disabled = apply_compatibility(&version, mac_arm64(), CompatibilityPolicy::Disabled);
     assert!(disabled.applied_patches.is_empty());
+}
+
+#[test]
+fn reports_app_host_windowing_strategy_for_legacy_lwjgl2_on_macos_arm64() {
+    let version = legacy_lwjgl2_version();
+
+    let patched = apply_compatibility(&version, mac_arm64(), CompatibilityPolicy::Auto);
+
+    assert_eq!(
+        patched.windowing.strategy,
+        WindowingStrategy::MacOsAppBundle
+    );
+    assert!(patched.windowing.requires_visible_window_verification);
+    assert!(patched.windowing.reason.contains("LWJGL 2"));
+}
+
+#[test]
+fn keeps_standard_windowing_strategy_when_legacy_patch_is_not_applied() {
+    let version = legacy_lwjgl2_version();
+
+    let x64 = apply_compatibility(&version, mac_x64(), CompatibilityPolicy::Auto);
+    assert_eq!(x64.windowing.strategy, WindowingStrategy::CurrentProcess);
+    assert!(!x64.windowing.requires_visible_window_verification);
+
+    let disabled = apply_compatibility(&version, mac_arm64(), CompatibilityPolicy::Disabled);
+    assert_eq!(
+        disabled.windowing.strategy,
+        WindowingStrategy::CurrentProcess
+    );
+    assert!(!disabled.windowing.requires_visible_window_verification);
 }
 
 #[test]

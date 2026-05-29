@@ -19,6 +19,23 @@ pub enum CompatibilityPatch {
     LegacyMacArm64Lwjgl2,
 }
 
+/// Describes how a launcher should host the game process for window creation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WindowingStrategy {
+    /// Start Java from the launcher's current process model.
+    CurrentProcess,
+    /// Host Java from a real macOS app bundle or equivalent GUI app process.
+    MacOsAppBundle,
+}
+
+/// Window-hosting guidance discovered while applying compatibility rules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WindowingHint {
+    pub strategy: WindowingStrategy,
+    pub requires_visible_window_verification: bool,
+    pub reason: &'static str,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct JavaRuntimeHint {
     pub major_version: i32,
@@ -32,6 +49,7 @@ pub struct CompatibilityResult {
     pub version: VersionJson,
     pub applied_patches: Vec<CompatibilityPatch>,
     pub java_runtime: Option<JavaRuntimeHint>,
+    pub windowing: WindowingHint,
 }
 
 pub fn apply_compatibility(
@@ -44,6 +62,7 @@ pub fn apply_compatibility(
             version: version.clone(),
             applied_patches: Vec::new(),
             java_runtime: None,
+            windowing: current_process_windowing_hint(),
         };
     }
 
@@ -57,6 +76,7 @@ pub fn apply_compatibility(
                 distribution_hint: "Azul Zulu Java 8 arm64",
                 reason: "Legacy LWJGL 2 Minecraft versions need an arm64 Java 8 runtime on Apple Silicon.",
             }),
+            windowing: legacy_macos_lwjgl2_windowing_hint(),
         };
     }
 
@@ -64,6 +84,23 @@ pub fn apply_compatibility(
         version: version.clone(),
         applied_patches: Vec::new(),
         java_runtime: None,
+        windowing: current_process_windowing_hint(),
+    }
+}
+
+fn current_process_windowing_hint() -> WindowingHint {
+    WindowingHint {
+        strategy: WindowingStrategy::CurrentProcess,
+        requires_visible_window_verification: false,
+        reason: "The version can be launched as a normal Java process by the launcher.",
+    }
+}
+
+fn legacy_macos_lwjgl2_windowing_hint() -> WindowingHint {
+    WindowingHint {
+        strategy: WindowingStrategy::MacOsAppBundle,
+        requires_visible_window_verification: true,
+        reason: "Legacy LWJGL 2 can create 0x0 invisible windows when spawned directly from a CLI process on Apple Silicon; launch from a macOS app bundle or other GUI host and verify the visible window.",
     }
 }
 

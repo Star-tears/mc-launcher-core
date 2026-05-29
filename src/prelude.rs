@@ -3,6 +3,7 @@ pub use crate::{
     command::builder::{LaunchCommand, LaunchOptions},
     compatibility::{
         CompatibilityPatch, CompatibilityPolicy, CompatibilityResult, JavaRuntimeHint,
+        WindowingHint, WindowingStrategy,
     },
     error::{LauncherError, Result},
     install::request::{InstallRequest, InstallResult, JavaInstallPolicy},

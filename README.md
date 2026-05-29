@@ -70,6 +70,16 @@ Silicon, use an arm64 Java 8 runtime such as Azul Zulu Java 8 and pass it via
 `plan_vanilla_downloads_for_platform` to `CompatibilityPolicy::Disabled` if a
 launcher wants to manage these patches itself.
 
+The library separates library/native compatibility from window-hosting
+compatibility. For legacy LWJGL 2 versions on macOS arm64,
+`apply_compatibility` returns `CompatibilityResult::windowing` with
+`WindowingStrategy::MacOsAppBundle` and
+`requires_visible_window_verification = true`. This reflects the observed
+behavior that a direct CLI-spawned Java process can initialize Minecraft and
+still create a 0x0 invisible window. A desktop launcher should run these
+versions from a real macOS app bundle or equivalent GUI host, then verify that a
+visible game window was created.
+
 ## Todo list
 
 - [x] Crate library
