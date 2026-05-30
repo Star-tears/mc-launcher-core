@@ -32,7 +32,7 @@
 - Modify: `src/command/mod.rs`
 - Test: `tests/command_builder.rs`
 
-- [ ] **Step 1: Write failing command builder tests**
+- [x] **Step 1: Write failing command builder tests**
 
 Create `tests/command_builder.rs`:
 
@@ -94,7 +94,7 @@ fn launch_command_exposes_process_parts() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -104,7 +104,7 @@ cargo test --test command_builder
 
 Expected: FAIL because account and command builder types are missing.
 
-- [ ] **Step 3: Add public account model**
+- [x] **Step 3: Add public account model**
 
 Create `src/account.rs`:
 
@@ -153,7 +153,7 @@ impl Account {
 }
 ```
 
-- [ ] **Step 4: Implement argument replacement and classpath helpers**
+- [x] **Step 4: Implement argument replacement and classpath helpers**
 
 Create `src/core/arguments.rs`:
 
@@ -303,7 +303,7 @@ pub mod rules;
 pub mod version;
 ```
 
-- [ ] **Step 5: Implement launch command builder**
+- [x] **Step 5: Implement launch command builder**
 
 Create `src/command/builder.rs`:
 
@@ -472,7 +472,7 @@ pub mod builder;
 
 If this removes old functions and examples fail, re-add old functions as deprecated wrappers in Task 10.
 
-- [ ] **Step 6: Run focused tests**
+- [x] **Step 6: Run focused tests**
 
 Run:
 
@@ -482,7 +482,7 @@ cargo test --test command_builder
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/account.rs src/core src/command tests/command_builder.rs
@@ -500,7 +500,7 @@ git commit -m "feat: add launch command builder"
 - Modify: `src/io/mod.rs`
 - Test: `tests/download_archive.rs`
 
-- [ ] **Step 1: Write failing tests for download task skip and zip-slip rejection**
+- [x] **Step 1: Write failing tests for download task skip and zip-slip rejection**
 
 Create `tests/download_archive.rs`:
 
@@ -547,7 +547,7 @@ fn rejects_zip_entry_that_escapes_destination() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -557,7 +557,7 @@ cargo test --test download_archive
 
 Expected: FAIL because download and archive helpers are missing.
 
-- [ ] **Step 3: Implement progress events**
+- [x] **Step 3: Implement progress events**
 
 Create `src/progress.rs`:
 
@@ -604,7 +604,7 @@ where
 }
 ```
 
-- [ ] **Step 4: Implement HTTP client wrapper**
+- [x] **Step 4: Implement HTTP client wrapper**
 
 Create `src/net/http.rs`:
 
@@ -633,7 +633,7 @@ where
 }
 ```
 
-- [ ] **Step 5: Implement download task model**
+- [x] **Step 5: Implement download task model**
 
 Create `src/net/download.rs`:
 
@@ -736,7 +736,7 @@ pub mod download;
 pub mod http;
 ```
 
-- [ ] **Step 6: Implement safe archive extraction**
+- [x] **Step 6: Implement safe archive extraction**
 
 Create `src/io/archive.rs`:
 
@@ -793,7 +793,7 @@ pub mod hash;
 pub mod paths;
 ```
 
-- [ ] **Step 7: Run focused tests**
+- [x] **Step 7: Run focused tests**
 
 Run:
 
@@ -803,7 +803,7 @@ cargo test --test download_archive
 
 Expected: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add src/progress.rs src/net src/io tests/download_archive.rs
@@ -822,7 +822,7 @@ git commit -m "feat: add download plan and safe archive extraction"
 - Create: `src/prelude.rs`
 - Test: `tests/install_plan.rs`
 
-- [ ] **Step 1: Add fixture and failing install plan test**
+- [x] **Step 1: Add fixture and failing install plan test**
 
 Create `tests/fixtures/version_1_20_4_min.json`:
 
@@ -905,7 +905,7 @@ fn install_request_defaults_to_auto_java() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -915,7 +915,7 @@ cargo test --test install_plan
 
 Expected: FAIL because install request and vanilla planning are missing.
 
-- [ ] **Step 3: Implement install request types**
+- [x] **Step 3: Implement install request types**
 
 Create `src/install/request.rs`:
 
@@ -997,7 +997,7 @@ pub enum LoaderKind {
 }
 ```
 
-- [ ] **Step 4: Implement vanilla planning**
+- [x] **Step 4: Implement vanilla planning**
 
 Create `src/install/libraries.rs`:
 
@@ -1103,7 +1103,7 @@ pub mod vanilla;
 pub use request::{InstallRequest, InstallResult, JavaInstallPolicy};
 ```
 
-- [ ] **Step 5: Add facade and prelude skeleton**
+- [x] **Step 5: Add facade and prelude skeleton**
 
 Create `src/launcher.rs`:
 
@@ -1166,7 +1166,7 @@ pub use crate::{
 };
 ```
 
-- [ ] **Step 6: Run focused tests**
+- [x] **Step 6: Run focused tests**
 
 Run:
 
@@ -1176,7 +1176,7 @@ cargo test --test install_plan
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/install src/launcher.rs src/prelude.rs src/loader tests/fixtures/version_1_20_4_min.json tests/install_plan.rs

@@ -30,7 +30,7 @@
 - Create: `src/platform.rs`
 - Test: `tests/error_baseline.rs`
 
-- [ ] **Step 1: Write the failing typed error smoke test**
+- [x] **Step 1: Write the failing typed error smoke test**
 
 Create `tests/error_baseline.rs`:
 
@@ -50,7 +50,7 @@ fn launcher_error_formats_context() {
 }
 ```
 
-- [ ] **Step 2: Run the test and confirm the current crate still fails before the fix**
+- [x] **Step 2: Run the test and confirm the current crate still fails before the fix**
 
 Run:
 
@@ -60,7 +60,7 @@ cargo test --test error_baseline
 
 Expected: FAIL before implementation. On macOS the failure may be the current `winver` compile error; that still validates the task starts from the known broken baseline.
 
-- [ ] **Step 3: Update dependencies**
+- [x] **Step 3: Update dependencies**
 
 Edit `Cargo.toml` so the dependency section contains these direct dependencies:
 
@@ -92,7 +92,7 @@ winver = "1.0.0"
 
 Remove direct `lazy_static`, `ring`, and `rust-crypto` entries. Keep the existing package metadata.
 
-- [ ] **Step 4: Add the error module**
+- [x] **Step 4: Add the error module**
 
 Create `src/error.rs`:
 
@@ -148,7 +148,7 @@ pub enum LauncherError {
 }
 ```
 
-- [ ] **Step 5: Add the platform module**
+- [x] **Step 5: Add the platform module**
 
 Create `src/platform.rs`:
 
@@ -208,7 +208,7 @@ impl Platform {
 }
 ```
 
-- [ ] **Step 6: Add temporary loader kind and exports**
+- [x] **Step 6: Add temporary loader kind and exports**
 
 Create `src/loader/mod.rs`:
 
@@ -253,7 +253,7 @@ Create empty module files needed by these exports with module comments so the cr
 
 Use this scaffold for `src/account.rs`, `src/core/mod.rs`, `src/io/mod.rs`, `src/launcher.rs`, `src/net/mod.rs`, `src/prelude.rs`, and `src/progress.rs`.
 
-- [ ] **Step 7: Run the focused test**
+- [x] **Step 7: Run the focused test**
 
 Run:
 
@@ -263,7 +263,7 @@ cargo test --test error_baseline
 
 Expected: PASS.
 
-- [ ] **Step 8: Run full compile checks**
+- [x] **Step 8: Run full compile checks**
 
 Run:
 
@@ -274,7 +274,7 @@ cargo test --examples
 
 Expected: Existing code may now fail due to dependency API changes. Fix mechanical API changes in existing modules without changing behavior. The final expected result for this task is PASS for both commands.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add Cargo.toml Cargo.lock src tests/error_baseline.rs
@@ -291,7 +291,7 @@ git commit -m "chore: modernize dependencies and add launcher error"
 - Modify: `src/io/mod.rs`
 - Test: `tests/core_maven_io.rs`
 
-- [ ] **Step 1: Write failing tests for Maven paths, hashes, and safe paths**
+- [x] **Step 1: Write failing tests for Maven paths, hashes, and safe paths**
 
 Create `tests/core_maven_io.rs`:
 
@@ -353,7 +353,7 @@ fn safe_join_rejects_parent_escape() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -363,7 +363,7 @@ cargo test --test core_maven_io
 
 Expected: FAIL because modules/functions are missing.
 
-- [ ] **Step 3: Implement Maven coordinate parsing**
+- [x] **Step 3: Implement Maven coordinate parsing**
 
 Create `src/core/maven.rs`:
 
@@ -450,7 +450,7 @@ Modify `src/core/mod.rs`:
 pub mod maven;
 ```
 
-- [ ] **Step 4: Implement hashing**
+- [x] **Step 4: Implement hashing**
 
 Create `src/io/hash.rs`:
 
@@ -483,7 +483,7 @@ pub fn sha1_file(path: impl AsRef<Path>) -> Result<String> {
 }
 ```
 
-- [ ] **Step 5: Implement safe path joining**
+- [x] **Step 5: Implement safe path joining**
 
 Create `src/io/paths.rs`:
 
@@ -540,7 +540,7 @@ pub mod hash;
 pub mod paths;
 ```
 
-- [ ] **Step 6: Run the focused tests**
+- [x] **Step 6: Run the focused tests**
 
 Run:
 
@@ -550,7 +550,7 @@ cargo test --test core_maven_io
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/core src/io tests/core_maven_io.rs
@@ -565,7 +565,7 @@ git commit -m "feat: add maven parsing and safe io helpers"
 - Modify: `src/core/mod.rs`
 - Test: `tests/core_rules_version.rs`
 
-- [ ] **Step 1: Write failing tests for rules and inheritance**
+- [x] **Step 1: Write failing tests for rules and inheritance**
 
 Create `tests/core_rules_version.rs`:
 
@@ -658,7 +658,7 @@ fn child_version_overrides_main_class_and_extends_libraries() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -668,7 +668,7 @@ cargo test --test core_rules_version
 
 Expected: FAIL because rule and version models are missing.
 
-- [ ] **Step 3: Implement rules**
+- [x] **Step 3: Implement rules**
 
 Create `src/core/rules.rs` with serde-compatible rule models:
 
@@ -759,7 +759,7 @@ fn rule_matches(rule: &Rule, platform: Platform, features: &FeatureSet) -> bool 
 }
 ```
 
-- [ ] **Step 4: Implement version models and merge**
+- [x] **Step 4: Implement version models and merge**
 
 Create `src/core/version.rs` with fields needed by current install and command flows:
 
@@ -929,7 +929,7 @@ pub mod rules;
 pub mod version;
 ```
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run:
 
@@ -939,7 +939,7 @@ cargo test --test core_rules_version
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/core tests/core_rules_version.rs

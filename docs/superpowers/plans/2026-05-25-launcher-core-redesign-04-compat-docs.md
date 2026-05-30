@@ -31,7 +31,7 @@
 - Modify: `src/types/mod.rs`
 - Test: `tests/compat_wrappers.rs`
 
-- [ ] **Step 1: Write failing compatibility wrapper tests**
+- [x] **Step 1: Write failing compatibility wrapper tests**
 
 Create `tests/compat_wrappers.rs`:
 
@@ -70,7 +70,7 @@ fn vanilla_install_wrapper_accepts_request_shape() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -80,7 +80,7 @@ cargo test --test compat_wrappers
 
 Expected: FAIL where wrappers were removed or now point at old dependency APIs.
 
-- [ ] **Step 3: Keep legacy offline helper using new account model**
+- [x] **Step 3: Keep legacy offline helper using new account model**
 
 Modify `src/auth/offline.rs`:
 
@@ -102,7 +102,7 @@ pub fn get_offline_options(user_name: &str) -> MinecraftOptions {
 }
 ```
 
-- [ ] **Step 4: Replace PKCE hashing dependency**
+- [x] **Step 4: Replace PKCE hashing dependency**
 
 Modify `src/auth/microsoft_account.rs`:
 
@@ -125,7 +125,7 @@ let code_challenge = URL_SAFE_NO_PAD.encode(digest);
 
 Apply the same replacement in tests inside this module.
 
-- [ ] **Step 5: Re-add command and install wrappers**
+- [x] **Step 5: Re-add command and install wrappers**
 
 In `src/command/mod.rs`, expose the builder and a legacy wrapper:
 
@@ -189,7 +189,7 @@ pub fn install_minecraft_version(
 }
 ```
 
-- [ ] **Step 6: Keep utility version helpers compiling**
+- [x] **Step 6: Keep utility version helpers compiling**
 
 Modify `src/utils/mod.rs` so `get_core_version` remains:
 
@@ -201,7 +201,7 @@ pub fn get_core_version() -> String {
 
 For old network helpers retained in `utils`, delegate to `net::http` or mark deprecated. Keep `MinecraftOptions`, `CallbackDict`, and related legacy structs in `src/types/mod.rs` until all examples and wrappers compile.
 
-- [ ] **Step 7: Run focused tests**
+- [x] **Step 7: Run focused tests**
 
 Run:
 
@@ -211,7 +211,7 @@ cargo test --test compat_wrappers
 
 Expected: PASS.
 
-- [ ] **Step 8: Run auth tests**
+- [x] **Step 8: Run auth tests**
 
 Run:
 
@@ -221,7 +221,7 @@ cargo test auth::microsoft_account::test_code_challenge
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add src/auth src/utils src/command src/install src/types tests/compat_wrappers.rs
@@ -236,7 +236,7 @@ git commit -m "feat: add compatibility wrappers"
 - Modify: `examples/simple_offline_launch.rs`
 - Test: full suite
 
-- [ ] **Step 1: Update README example**
+- [x] **Step 1: Update README example**
 
 Replace the README example with this facade-based example:
 
@@ -279,13 +279,13 @@ fn main() -> mc_launcher_core::Result<()> {
 }
 ```
 
-- [ ] **Step 2: Update examples**
+- [x] **Step 2: Update examples**
 
 Update `examples/simple_offline_launch.rs` to use `Launcher`, `InstallRequest::vanilla`, `Account::offline`, and `build_launch_command_from_version`.
 
 Update `examples/simple_launch.rs` to show a Fabric install using `LoaderSpec::Fabric { version: LoaderVersion::LatestStable }`.
 
-- [ ] **Step 3: Run formatting**
+- [x] **Step 3: Run formatting**
 
 Run:
 
@@ -295,7 +295,7 @@ cargo fmt
 
 Expected: command exits successfully.
 
-- [ ] **Step 4: Run full tests**
+- [x] **Step 4: Run full tests**
 
 Run:
 
@@ -305,7 +305,7 @@ cargo test
 
 Expected: PASS. Default tests must not require live network access.
 
-- [ ] **Step 5: Run examples compile check**
+- [x] **Step 5: Run examples compile check**
 
 Run:
 
@@ -315,7 +315,7 @@ cargo test --examples
 
 Expected: PASS.
 
-- [ ] **Step 6: Check for legacy dependency residue**
+- [x] **Step 6: Check for legacy dependency residue**
 
 Run:
 
@@ -325,7 +325,7 @@ rg -n "rust-crypto|lazy_static|ring::digest|winver" Cargo.toml src
 
 Expected: no `rust-crypto`, `lazy_static`, or `ring::digest`; `winver` appears only in Windows-targeted dependency usage or not at all.
 
-- [ ] **Step 7: Check for panic-prone core paths**
+- [x] **Step 7: Check for panic-prone core paths**
 
 Run:
 
@@ -335,7 +335,7 @@ rg -n "unwrap\\(|expect\\(|panic!" src/core src/install src/loader src/net src/i
 
 Expected: no `unwrap`, `expect`, or `panic!` in main implementation modules. Test modules may use them.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add README.md examples Cargo.toml Cargo.lock src tests
@@ -347,7 +347,7 @@ git commit -m "docs: update launcher facade examples"
 **Files:**
 - Create: `tests/live_metadata.rs`
 
-- [ ] **Step 1: Add ignored live metadata tests**
+- [x] **Step 1: Add ignored live metadata tests**
 
 Create `tests/live_metadata.rs`:
 
@@ -381,7 +381,7 @@ fn fetches_live_neoforge_versions() {
 }
 ```
 
-- [ ] **Step 2: Run default suite and verify ignored tests do not run**
+- [x] **Step 2: Run default suite and verify ignored tests do not run**
 
 Run:
 
@@ -391,7 +391,7 @@ cargo test --test live_metadata
 
 Expected: PASS with four ignored tests.
 
-- [ ] **Step 3: Run live smoke tests manually**
+- [x] **Step 3: Run live smoke tests manually**
 
 Run:
 
@@ -401,7 +401,7 @@ cargo test --test live_metadata -- --ignored
 
 Expected: PASS when network is available.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/live_metadata.rs
@@ -410,7 +410,7 @@ git commit -m "test: add ignored live loader metadata smoke tests"
 
 ## Final Verification
 
-- [ ] Run:
+- [x] Run:
 
 ```bash
 cargo fmt -- --check
@@ -421,7 +421,7 @@ cargo test --test live_metadata -- --ignored
 
 Expected: all commands pass on the current machine with network available for the ignored live metadata suite.
 
-- [ ] Run:
+- [x] Run:
 
 ```bash
 git status --short

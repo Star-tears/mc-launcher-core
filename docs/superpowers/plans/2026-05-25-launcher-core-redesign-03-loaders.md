@@ -30,7 +30,7 @@
 - Test: `tests/loader_fabric_quilt.rs`
 - Fixtures: `tests/fixtures/fabric_loaders.json`, `tests/fixtures/fabric_profile_1_20_4.json`, `tests/fixtures/quilt_loaders.json`, `tests/fixtures/quilt_profile_1_20_4.json`
 
-- [ ] **Step 1: Add fixtures and failing tests**
+- [x] **Step 1: Add fixtures and failing tests**
 
 Create `tests/fixtures/fabric_loaders.json`:
 
@@ -129,7 +129,7 @@ fn quilt_profile_parses_as_version_json() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -139,7 +139,7 @@ cargo test --test loader_fabric_quilt
 
 Expected: FAIL because provider modules are missing.
 
-- [ ] **Step 3: Implement Fabric provider helpers**
+- [x] **Step 3: Implement Fabric provider helpers**
 
 Create `src/loader/fabric.rs`:
 
@@ -179,7 +179,7 @@ pub fn fetch_profile(minecraft_version: &str, loader_version: &str) -> Result<Ve
 }
 ```
 
-- [ ] **Step 4: Implement Quilt provider helpers**
+- [x] **Step 4: Implement Quilt provider helpers**
 
 Create `src/loader/quilt.rs`:
 
@@ -238,7 +238,7 @@ pub enum LoaderKind {
 }
 ```
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run:
 
@@ -248,7 +248,7 @@ cargo test --test loader_fabric_quilt
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/loader tests/fixtures/fabric_loaders.json tests/fixtures/fabric_profile_1_20_4.json tests/fixtures/quilt_loaders.json tests/fixtures/quilt_profile_1_20_4.json tests/loader_fabric_quilt.rs
@@ -265,7 +265,7 @@ git commit -m "feat: add fabric and quilt metadata providers"
 - Test: `tests/loader_forge_neoforge.rs`
 - Fixtures: `tests/fixtures/forge_maven_metadata.xml`, `tests/fixtures/neoforge_maven_metadata.xml`
 
-- [ ] **Step 1: Add fixtures and failing tests**
+- [x] **Step 1: Add fixtures and failing tests**
 
 Create `tests/fixtures/forge_maven_metadata.xml`:
 
@@ -343,7 +343,7 @@ fn maps_neoforge_version_to_installed_id() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -353,7 +353,7 @@ cargo test --test loader_forge_neoforge
 
 Expected: FAIL because Forge and NeoForge modules are missing.
 
-- [ ] **Step 3: Implement shared Maven metadata parser in Forge module**
+- [x] **Step 3: Implement shared Maven metadata parser in Forge module**
 
 Create `src/loader/forge.rs`:
 
@@ -423,7 +423,7 @@ pub fn installer_url(forge_version: &str) -> String {
 }
 ```
 
-- [ ] **Step 4: Implement NeoForge module**
+- [x] **Step 4: Implement NeoForge module**
 
 Create `src/loader/neoforge.rs`:
 
@@ -501,7 +501,7 @@ pub fn run_forge_installer(
 }
 ```
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run:
 
@@ -511,7 +511,7 @@ cargo test --test loader_forge_neoforge
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/loader src/forge/mod.rs tests/fixtures/forge_maven_metadata.xml tests/fixtures/neoforge_maven_metadata.xml tests/loader_forge_neoforge.rs
@@ -527,7 +527,7 @@ git commit -m "feat: add forge and neoforge metadata providers"
 - Modify: `src/launcher.rs`
 - Test: `tests/loader_install_integration.rs`
 
-- [ ] **Step 1: Write failing tests for installing loader profile fixtures**
+- [x] **Step 1: Write failing tests for installing loader profile fixtures**
 
 Create `tests/loader_install_integration.rs`:
 
@@ -596,7 +596,7 @@ fn builds_installer_command_arguments() {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -606,7 +606,7 @@ cargo test --test loader_install_integration
 
 Expected: FAIL because install loader helpers are missing.
 
-- [ ] **Step 3: Implement loader profile writing**
+- [x] **Step 3: Implement loader profile writing**
 
 Create `src/install/loader.rs`:
 
@@ -685,7 +685,7 @@ pub mod vanilla;
 pub use request::{InstallRequest, InstallResult, JavaInstallPolicy};
 ```
 
-- [ ] **Step 4: Extend facade install for metadata-profile and installer loaders**
+- [x] **Step 4: Extend facade install for metadata-profile and installer loaders**
 
 Modify `src/launcher.rs` so `install` handles Fabric and Quilt by resolving loader versions online and writing profiles, and handles Forge and NeoForge by downloading and running installer JARs:
 
@@ -834,7 +834,7 @@ fn download_installer(
 }
 ```
 
-- [ ] **Step 5: Run focused tests**
+- [x] **Step 5: Run focused tests**
 
 Run:
 
@@ -844,7 +844,7 @@ cargo test --test loader_install_integration
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/install src/launcher.rs tests/loader_install_integration.rs
