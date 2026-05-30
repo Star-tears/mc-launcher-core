@@ -1,8 +1,8 @@
 [package]
 name = "mc-launcher-core"
-version = "0.1.0"
+version = "0.1.1"
 license = "MIT"
-description = "This is an mc launcher core written in Rust."
+description = "Rust building blocks for installing and launching Minecraft profiles."
 readme = "README.md"
 homepage = "https://github.com/Star-tears/mc-launcher-core"
 repository = "https://github.com/Star-tears/mc-launcher-core"

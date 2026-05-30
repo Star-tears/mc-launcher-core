@@ -1,3 +1,10 @@
+//! Microsoft account login helpers.
+//!
+//! The flow is split into small steps so desktop launchers can control browser
+//! handling, redirect capture, token storage, and refresh scheduling. Use
+//! [`get_secure_login_data`] for PKCE-enabled sign-in, then pass the returned
+//! verifier to [`complete_login`] after the redirect URL yields an auth code.
+
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::{distr::Alphanumeric, Rng};
 use reqwest::blocking::Client;
@@ -18,6 +25,9 @@ const AUTH_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/
 const TOKEN_URL: &str = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
 const SCOPE: &str = "XboxLive.signin offline_access";
 
+/// Builds a Microsoft OAuth login URL without PKCE.
+///
+/// New applications should prefer [`get_secure_login_data`].
 pub fn get_login_url(client_id: &str, redirect_uri: &str) -> String {
     let mut parameters = HashMap::new();
     parameters.insert("client_id", client_id);
@@ -53,6 +63,7 @@ fn generate_pkce_data() -> (String, String, String) {
     (code_verifier, code_challenge, code_challenge_method)
 }
 
+/// Generates a random OAuth state token.
 pub fn generate_state() -> String {
     let mut rng = rand::rng();
     let chars: Vec<char> = (0..16)
@@ -66,6 +77,10 @@ pub fn generate_state() -> String {
     state
 }
 
+/// Builds a PKCE-enabled login URL, state token, and code verifier.
+///
+/// The returned tuple is `(login_url, state, code_verifier)`. Store the verifier
+/// until the redirect is received, then pass it to [`complete_login`].
 pub fn get_secure_login_data(
     client_id: &str,
     redirect_uri: &str,
@@ -94,6 +109,7 @@ pub fn get_secure_login_data(
     (login_url.to_string(), state, code_verifier)
 }
 
+/// Returns true when a redirect URL contains a `code` query parameter.
 pub fn url_contains_auth_code(url: &str) -> bool {
     if let Ok(parsed) = Url::parse(url) {
         if let Some(qs) = parsed.query() {
@@ -111,6 +127,7 @@ pub fn url_contains_auth_code(url: &str) -> bool {
     false
 }
 
+/// Extracts the raw `code` query parameter from a redirect URL.
 pub fn get_auth_code_from_url(url: &str) -> Option<String> {
     if let Ok(parsed) = Url::parse(url) {
         if let Some(qs) = parsed.query() {
@@ -131,6 +148,12 @@ pub fn get_auth_code_from_url(url: &str) -> Option<String> {
     None
 }
 
+/// Parses a redirect URL and validates the optional state value.
+///
+/// # Errors
+///
+/// Returns an error when the URL has no auth code or the state value does not
+/// match the expected state.
 pub fn parse_auth_code_url(
     url: &str,
     state: Option<String>,
@@ -159,6 +182,14 @@ pub fn parse_auth_code_url(
     Err("parse_auth_code_url error.".into())
 }
 
+/// Exchanges an OAuth authorization code for Microsoft access and refresh tokens.
+///
+/// Pass the PKCE verifier returned by [`get_secure_login_data`] when using the
+/// secure login flow.
+///
+/// # Errors
+///
+/// Returns a [`reqwest::Error`] if the HTTP request or response decoding fails.
 pub fn get_authorization_token(
     client_id: &str,
     client_secret: Option<&str>,
@@ -193,6 +224,11 @@ pub fn get_authorization_token(
     Ok(token_response)
 }
 
+/// Refreshes Microsoft OAuth tokens using a refresh token.
+///
+/// # Errors
+///
+/// Returns a [`reqwest::Error`] if the HTTP request or response decoding fails.
 pub fn refresh_authorization_token(
     client_id: &str,
     client_secret: Option<&str>,
@@ -219,6 +255,11 @@ pub fn refresh_authorization_token(
     Ok(token_response)
 }
 
+/// Authenticates a Microsoft access token with Xbox Live.
+///
+/// # Errors
+///
+/// Returns an error if the Xbox Live request or response decoding fails.
 pub fn authenticate_with_xbl(
     access_token: &str,
 ) -> Result<XBLResponse, Box<dyn std::error::Error>> {
@@ -247,6 +288,11 @@ pub fn authenticate_with_xbl(
     Ok(xbl_response)
 }
 
+/// Exchanges an Xbox Live token for an XSTS token.
+///
+/// # Errors
+///
+/// Returns a [`reqwest::Error`] if the HTTP request or response decoding fails.
 pub fn authenticate_with_xsts(xbl_token: &str) -> Result<XSTSResponse, reqwest::Error> {
     let mut parameters = HashMap::new();
     parameters.insert(
@@ -272,6 +318,11 @@ pub fn authenticate_with_xsts(xbl_token: &str) -> Result<XSTSResponse, reqwest::
     Ok(xsts_response)
 }
 
+/// Exchanges XSTS identity data for a Minecraft services access token.
+///
+/// # Errors
+///
+/// Returns a [`reqwest::Error`] if the HTTP request or response decoding fails.
 pub fn authenticate_with_minecraft(
     userhash: &str,
     xsts_token: &str,
@@ -293,6 +344,11 @@ pub fn authenticate_with_minecraft(
     Ok(minecraft_response)
 }
 
+/// Fetches Minecraft store entitlement information for an access token.
+///
+/// # Errors
+///
+/// Returns a [`reqwest::Error`] if the HTTP request or response decoding fails.
 pub fn get_store_information(access_token: &str) -> Result<MinecraftStoreResponse, reqwest::Error> {
     let client = Client::new();
     let res = client
@@ -305,6 +361,11 @@ pub fn get_store_information(access_token: &str) -> Result<MinecraftStoreRespons
     Ok(store_response)
 }
 
+/// Fetches the Minecraft profile for an authenticated account.
+///
+/// # Errors
+///
+/// Returns an error if the profile request or response decoding fails.
 pub fn get_profile(
     access_token: &str,
 ) -> Result<MinecraftProfileResponse, Box<dyn std::error::Error>> {
@@ -319,6 +380,15 @@ pub fn get_profile(
     Ok(profile_response)
 }
 
+/// Completes the full Microsoft-to-Minecraft login flow.
+///
+/// This exchanges the OAuth code, authenticates with Xbox Live and XSTS, logs in
+/// to Minecraft services, and returns profile plus token data.
+///
+/// # Errors
+///
+/// Returns an error if any network step fails, the app is not permitted, or the
+/// account does not own Minecraft.
 pub fn complete_login(
     client_id: &str,
     client_secret: Option<&str>,
@@ -368,6 +438,15 @@ pub fn complete_login(
     })
 }
 
+/// Completes the full token refresh flow.
+///
+/// This refreshes Microsoft OAuth tokens, then repeats Xbox Live, XSTS, and
+/// Minecraft services authentication to return fresh launch credentials.
+///
+/// # Errors
+///
+/// Returns an error if the refresh token is invalid, any network step fails, or
+/// the account does not own Minecraft.
 pub fn complete_refresh(
     client_id: &str,
     client_secret: Option<&str>,

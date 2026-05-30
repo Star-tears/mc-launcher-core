@@ -1,3 +1,10 @@
+//! Launch command construction.
+//!
+//! This module converts merged Minecraft version metadata into a Java
+//! executable, argument list, working directory, and environment block. It does
+//! not spawn the process; callers can inspect or adjust the returned
+//! [`LaunchCommand`] before passing it to [`std::process::Command`].
+
 use std::path::PathBuf;
 
 use crate::{
@@ -13,19 +20,43 @@ use crate::{
     LauncherError, Result,
 };
 
+/// User and process settings used while building a launch command.
+///
+/// Start with [`LaunchOptions::default`] and override only the fields your
+/// launcher exposes. By default the game directory is isolated under
+/// `<minecraft_dir>/versions/<version_id>`, which keeps saves, options, logs,
+/// and mods separate per installed profile.
 #[derive(Debug, Clone)]
 pub struct LaunchOptions {
+    /// Account values substituted into Minecraft's auth placeholders.
     pub account: Account,
+    /// Java executable to run.
+    ///
+    /// If omitted, the command uses `java` and relies on the caller's `PATH`.
     pub java_executable: Option<PathBuf>,
+    /// Game directory passed as `${game_directory}` and used as process CWD.
+    ///
+    /// If omitted, a version-isolated directory is used.
     pub game_directory: Option<PathBuf>,
+    /// Directory containing extracted native libraries.
+    ///
+    /// If omitted, this points at `<minecraft_dir>/versions/<version_id>/natives`.
     pub natives_directory: Option<PathBuf>,
+    /// Launcher name passed to modern version argument templates.
     pub launcher_name: String,
+    /// Launcher version passed to modern version argument templates.
     pub launcher_version: String,
+    /// Optional window size appended as `--width` and `--height`.
     pub custom_resolution: Option<(u32, u32)>,
+    /// Enables Minecraft demo mode.
     pub demo: bool,
+    /// Optional multiplayer server and port to join after launch.
     pub server: Option<(String, Option<u16>)>,
+    /// Appends the modern `--disableMultiplayer` flag.
     pub disable_multiplayer: bool,
+    /// Appends the modern `--disableChat` flag.
     pub disable_chat: bool,
+    /// Controls whether known compatibility patches are applied before building.
     pub compatibility: CompatibilityPolicy,
 }
 
@@ -48,20 +79,39 @@ impl Default for LaunchOptions {
     }
 }
 
+/// A Java process description ready to spawn.
+///
+/// The command is intentionally returned as structured parts instead of a shell
+/// string so launchers can avoid quoting bugs across Windows, macOS, and Linux.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LaunchCommand {
+    /// Java executable path or command name.
     pub executable: PathBuf,
+    /// JVM, main class, and game arguments in process order.
     pub args: Vec<String>,
+    /// Directory that should be used as the child process current directory.
     pub working_dir: PathBuf,
+    /// Environment variables to set on the child process.
     pub env: Vec<(String, String)>,
 }
 
 impl LaunchCommand {
+    /// Returns the executable and argument list for callers that do not need
+    /// working-directory or environment metadata.
     pub fn to_process_parts(&self) -> (PathBuf, Vec<String>) {
         (self.executable.clone(), self.args.clone())
     }
 }
 
+/// Builds a launch command for the current platform.
+///
+/// This is the lower-level equivalent of
+/// [`crate::launcher::Launcher::build_launch_command_from_version`].
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if required version fields are missing or if
+/// library coordinates cannot be converted into classpath entries.
 pub fn build_launch_command(
     version: &VersionJson,
     minecraft_dir: PathBuf,
@@ -70,6 +120,16 @@ pub fn build_launch_command(
     build_launch_command_for_platform(version, minecraft_dir, options, Platform::current())
 }
 
+/// Builds a launch command for an explicit platform.
+///
+/// This function is mainly useful for tests, planning tools, or launchers that
+/// need to inspect cross-platform output. Normal applications should call
+/// [`build_launch_command`].
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the version metadata cannot produce a
+/// complete executable command.
 pub fn build_launch_command_for_platform(
     version: &VersionJson,
     minecraft_dir: PathBuf,

@@ -1,3 +1,5 @@
+//! Vanilla version metadata loading and complete file installation.
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -28,6 +30,12 @@ struct VersionManifestEntry {
     url: String,
 }
 
+/// Fetches a vanilla Minecraft version JSON from Mojang's version manifest.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the manifest cannot be fetched, the
+/// version id is unknown, or the version JSON cannot be decoded.
 pub fn fetch_vanilla_version(version_id: &str) -> Result<VersionJson> {
     let manifest: VersionManifest = http::get_json(VERSION_MANIFEST_URL)?;
     let entry = manifest
@@ -41,6 +49,7 @@ pub fn fetch_vanilla_version(version_id: &str) -> Result<VersionJson> {
     http::get_json(&entry.url)
 }
 
+/// Returns the canonical local path for a version JSON file.
 pub fn version_json_path(minecraft_dir: impl AsRef<Path>, version_id: &str) -> PathBuf {
     minecraft_dir
         .as_ref()
@@ -49,6 +58,12 @@ pub fn version_json_path(minecraft_dir: impl AsRef<Path>, version_id: &str) -> P
         .join(format!("{version_id}.json"))
 }
 
+/// Writes a version JSON to the standard local profile path.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the version has no `id`, the parent
+/// directory cannot be created, or JSON serialization fails.
 pub fn write_version_json(
     minecraft_dir: impl AsRef<Path>,
     version: &VersionJson,
@@ -68,15 +83,34 @@ pub fn write_version_json(
     Ok(path)
 }
 
+/// Reads a version JSON without merging inherited parent metadata.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the file cannot be read or decoded.
 pub fn read_version_json(minecraft_dir: impl AsRef<Path>, version_id: &str) -> Result<VersionJson> {
     let path = version_json_path(minecraft_dir, version_id);
     Ok(serde_json::from_slice(&fs::read(path)?)?)
 }
 
+/// Reads a version JSON and recursively merges any `inheritsFrom` parents.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if this profile or any parent profile cannot
+/// be read or decoded.
 pub fn load_version_json(minecraft_dir: impl AsRef<Path>, version_id: &str) -> Result<VersionJson> {
     load_version_json_inner(minecraft_dir.as_ref(), version_id)
 }
 
+/// Installs client jar, libraries, assets, and native libraries for a version.
+///
+/// Compatibility patches are applied automatically for the current platform.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if planning, downloads, checksums, asset
+/// decoding, or native extraction fails.
 pub fn install_version_files(
     version: &VersionJson,
     minecraft_dir: impl AsRef<Path>,
@@ -91,6 +125,15 @@ pub fn install_version_files(
     )
 }
 
+/// Installs version files for an explicit platform and compatibility policy.
+///
+/// This is useful for tests and custom launchers that need deterministic
+/// cross-platform planning.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if planning, downloads, checksums, asset
+/// decoding, or native extraction fails.
 pub fn install_version_files_for_platform(
     version: &VersionJson,
     minecraft_dir: impl AsRef<Path>,

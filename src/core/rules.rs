@@ -1,40 +1,61 @@
+//! Minecraft rule evaluation.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::platform::{Arch, Platform};
 
+/// Rule action from Minecraft version metadata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum RuleAction {
+    /// Allow when the rule matches.
     Allow,
+    /// Disallow when the rule matches.
     Disallow,
 }
 
+/// Operating-system selector in a rule.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct RuleOs {
+    /// Minecraft OS name such as `windows`, `osx`, or `linux`.
     pub name: Option<String>,
+    /// Optional architecture selector.
     pub arch: Option<String>,
+    /// Optional OS version regex from metadata.
     pub version: Option<String>,
 }
 
+/// One allow/disallow rule.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Rule {
+    /// Action applied when the rule matches.
     pub action: RuleAction,
+    /// Optional OS selector.
     pub os: Option<RuleOs>,
+    /// Optional feature flags required by this rule.
     pub features: Option<HashMap<String, bool>>,
 }
 
+/// Runtime feature flags used by argument and library rules.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FeatureSet {
+    /// Whether the launch is a demo-user launch.
     pub demo_user: bool,
+    /// Whether a custom resolution is being requested.
     pub custom_resolution: bool,
+    /// Whether quick play is supported.
     pub quick_play: bool,
+    /// Whether quick play single-player is active.
     pub quick_play_singleplayer: bool,
+    /// Whether quick play multiplayer is active.
     pub quick_play_multiplayer: bool,
+    /// Whether quick play Realms is active.
     pub quick_play_realms: bool,
 }
 
+/// Evaluates Minecraft allow/disallow rules for a platform and feature set.
 pub fn evaluate_rules(rules: &[Rule], platform: Platform, features: &FeatureSet) -> bool {
     if rules.is_empty() {
         return true;

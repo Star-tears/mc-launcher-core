@@ -1,3 +1,9 @@
+//! High-level launcher facade.
+//!
+//! [`Launcher`] owns a Minecraft directory and coordinates the common workflow:
+//! install a profile, load its merged version metadata, and build a Java
+//! command from that metadata.
+
 use std::path::{Path, PathBuf};
 
 use crate::{
@@ -19,27 +25,55 @@ use crate::{
     LauncherError, Result,
 };
 
+/// Facade for installing and launching Minecraft profiles inside one directory.
+///
+/// A `Launcher` is cheap to clone and only stores the root Minecraft directory.
+/// The directory is expected to follow the standard launcher layout with
+/// `versions`, `libraries`, `assets`, and `runtime` children as needed.
 #[derive(Debug, Clone)]
 pub struct Launcher {
     minecraft_dir: PathBuf,
 }
 
 impl Launcher {
+    /// Creates a launcher rooted at the given Minecraft directory.
+    ///
+    /// The directory is created lazily by install operations.
     pub fn new(minecraft_dir: impl Into<PathBuf>) -> Self {
         Self {
             minecraft_dir: minecraft_dir.into(),
         }
     }
 
+    /// Returns the Minecraft directory managed by this launcher.
     pub fn minecraft_dir(&self) -> &Path {
         &self.minecraft_dir
     }
 
+    /// Installs a vanilla or loader-backed Minecraft profile.
+    ///
+    /// This is a convenience wrapper around [`Launcher::install_with_progress`]
+    /// that ignores progress events.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LauncherError`] for network, filesystem, metadata, checksum, or
+    /// loader-installer failures.
     pub fn install(&self, request: InstallRequest) -> Result<InstallResult> {
         let mut reporter = |_event: ProgressEvent| {};
         self.install_with_progress(request, &mut reporter)
     }
 
+    /// Installs a profile and reports progress as tasks are processed.
+    ///
+    /// Vanilla, Fabric, and Quilt installs are handled with Rust-native
+    /// metadata planning. Forge and NeoForge currently download the installer
+    /// jar and invoke it with `java`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LauncherError`] for invalid versions, failed downloads,
+    /// checksum mismatches, unsafe paths, or loader installer failures.
     pub fn install_with_progress(
         &self,
         request: InstallRequest,
@@ -123,6 +157,15 @@ impl Launcher {
         })
     }
 
+    /// Builds a Java launch command from already-loaded version metadata.
+    ///
+    /// Call [`Launcher::load_version`] after installation to obtain merged
+    /// metadata for profiles that inherit from a parent version.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LauncherError`] if required metadata is missing or cannot be
+    /// converted into classpath and argument values.
     pub fn build_launch_command_from_version(
         &self,
         version: &VersionJson,
@@ -131,6 +174,15 @@ impl Launcher {
         build_launch_command(version, self.minecraft_dir.clone(), options)
     }
 
+    /// Loads and merges a version JSON from `<minecraft_dir>/versions`.
+    ///
+    /// If the profile declares `inheritsFrom`, parent metadata is loaded and
+    /// merged before the result is returned.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`LauncherError`] if the profile or any parent cannot be read or
+    /// parsed.
     pub fn load_version(&self, version_id: &str) -> Result<VersionJson> {
         load_version_json(&self.minecraft_dir, version_id)
     }

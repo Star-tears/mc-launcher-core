@@ -1,3 +1,10 @@
+//! Legacy and wire-format data types.
+//!
+//! New launcher code should prefer the facade types in [`crate::prelude`] and
+//! the normalized version model in [`crate::core::version`]. This module keeps
+//! compatibility structs for older APIs, Mojang/loader response shapes, runtime
+//! metadata, launcher profile parsing, and Minecraft news responses.
+
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
@@ -11,6 +18,7 @@ pub mod runtime_types;
 pub mod shared_types;
 pub mod vanilla_launcher_types;
 
+/// Legacy launch options shape retained for compatibility wrappers.
 #[derive(Debug, Default, PartialEq, Clone)]
 pub struct MinecraftOptions {
     pub username: Option<String>,
@@ -38,6 +46,7 @@ pub struct MinecraftOptions {
     pub quick_play_realms: Option<String>,
 }
 
+/// Legacy callback table used by compatibility installation APIs.
 #[derive(Clone, Copy, Default)]
 pub struct CallbackDict {
     pub set_status: Option<fn(String)>,
@@ -45,12 +54,14 @@ pub struct CallbackDict {
     pub set_max: Option<fn(i32)>,
 }
 
+/// Latest release and snapshot ids from Mojang's version manifest.
 #[derive(Debug)]
 pub struct LatestMinecraftVersions {
     pub release: String,
     pub snapshot: String,
 }
 
+/// One Minecraft version entry from Mojang's version manifest.
 #[derive(Debug, Clone)]
 pub struct MinecraftVersionInfo {
     pub id: String,
@@ -137,6 +148,7 @@ pub struct Articles {
 }
 
 // java_utils
+/// Metadata discovered for a local Java installation.
 #[derive(Debug)]
 pub struct JavaInformation {
     pub path: String,

@@ -1,3 +1,5 @@
+//! Argument rule evaluation and placeholder replacement.
+
 use std::{collections::HashMap, path::Path};
 
 use crate::{
@@ -9,21 +11,34 @@ use crate::{
     platform::Platform,
 };
 
+/// Values used when replacing placeholders in Minecraft argument templates.
 #[derive(Debug, Clone)]
 pub struct ArgumentContext<'a> {
+    /// Root Minecraft directory.
     pub minecraft_dir: &'a Path,
+    /// Directory containing extracted native libraries.
     pub natives_dir: &'a Path,
+    /// Game directory passed to Minecraft.
     pub game_dir: &'a Path,
+    /// Version metadata being launched.
     pub version: &'a VersionJson,
+    /// Account used for auth placeholders.
     pub account: &'a Account,
+    /// Platform classpath string.
     pub classpath: &'a str,
+    /// Launcher name placeholder value.
     pub launcher_name: &'a str,
+    /// Launcher version placeholder value.
     pub launcher_version: &'a str,
+    /// Version type placeholder value.
     pub version_type: &'a str,
+    /// Asset index placeholder value.
     pub assets_index: &'a str,
+    /// Additional placeholder replacements.
     pub extra: HashMap<&'a str, &'a str>,
 }
 
+/// Evaluates argument entries and filters ruled values for a platform.
 pub fn evaluate_arguments(
     values: &[ArgumentValue],
     context: &ArgumentContext<'_>,
@@ -53,6 +68,7 @@ pub fn evaluate_arguments(
     args
 }
 
+/// Replaces known Minecraft placeholders in a single argument string.
 pub fn replace_placeholders(raw: &str, context: &ArgumentContext<'_>) -> String {
     let version_name = context.version.id.as_deref().unwrap_or_default();
     let assets_root = context.minecraft_dir.join("assets");
@@ -110,6 +126,7 @@ pub fn replace_placeholders(raw: &str, context: &ArgumentContext<'_>) -> String 
     value
 }
 
+/// Returns the classpath separator for the current platform.
 pub fn classpath_separator() -> &'static str {
     if cfg!(windows) {
         ";"

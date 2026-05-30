@@ -1,3 +1,9 @@
+//! Legacy Java runtime discovery and installation helpers.
+//!
+//! The current high-level launch facade expects callers to choose Java and pass
+//! it through [`crate::command::builder::LaunchOptions::java_executable`]. These
+//! helpers remain for callers that still use the older runtime API.
+
 use std::{
     collections::HashMap,
     env, fs,

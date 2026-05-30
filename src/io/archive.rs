@@ -1,3 +1,5 @@
+//! Archive extraction helpers.
+
 use std::{
     fs::{self, File},
     io,
@@ -8,6 +10,12 @@ use zip::ZipArchive;
 
 use crate::{io::paths::safe_join, Result};
 
+/// Extracts a ZIP archive while rejecting entries that escape the destination.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the archive cannot be read, a file cannot
+/// be written, or an entry path is unsafe.
 pub fn extract_zip_safely(zip_path: impl AsRef<Path>, destination: impl AsRef<Path>) -> Result<()> {
     let file = File::open(zip_path)?;
     let mut archive = ZipArchive::new(file)?;

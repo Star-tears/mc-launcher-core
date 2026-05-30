@@ -1,9 +1,23 @@
+//! Command builders and legacy command helpers.
+//!
+//! New code should prefer [`builder::build_launch_command`] or the higher-level
+//! [`crate::launcher::Launcher::build_launch_command_from_version`] facade.
+
 pub mod builder;
 
 use std::{fs, path::Path};
 
 use crate::{core::version::VersionJson, types::MinecraftOptions, LauncherError};
 
+/// Legacy helper that returns a flattened Java command vector.
+///
+/// Prefer [`crate::launcher::Launcher::build_launch_command_from_version`],
+/// which returns a structured [`builder::LaunchCommand`].
+///
+/// # Errors
+///
+/// Returns an error if the version JSON is missing, cannot be parsed, or cannot
+/// be converted into a launch command.
 #[deprecated(note = "use Launcher::build_launch_command_from_version")]
 pub fn get_minecraft_command(
     version: &str,

@@ -1,3 +1,5 @@
+//! Download plans and execution.
+
 use std::{
     fs::{self, File},
     io,
@@ -10,25 +12,40 @@ use crate::{
     LauncherError, Result,
 };
 
+/// Supported checksum validation methods for downloaded files.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Checksum {
+    /// SHA-1 checksum.
     Sha1(String),
+    /// SHA-256 checksum.
     Sha256(String),
 }
 
+/// One file download.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DownloadTask {
+    /// Source URL.
     pub url: String,
+    /// Destination path.
     pub destination: PathBuf,
+    /// Optional checksum used for skip and validation decisions.
     pub checksum: Option<Checksum>,
+    /// Human-readable task label reported in progress events.
     pub label: String,
 }
 
+/// A batch of download tasks.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct DownloadPlan {
+    /// Tasks to execute in order.
     pub tasks: Vec<DownloadTask>,
 }
 
+/// Returns whether an existing destination file can be reused.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if checksum calculation fails.
 pub fn should_skip_existing(task: &DownloadTask) -> Result<bool> {
     if !task.destination.is_file() {
         return Ok(false);
@@ -41,6 +58,15 @@ pub fn should_skip_existing(task: &DownloadTask) -> Result<bool> {
     }
 }
 
+/// Executes a download plan in order.
+///
+/// Existing files with matching checksums are skipped. Each completed SHA-1
+/// download is verified before the next task begins.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] for network, filesystem, or checksum
+/// failures.
 pub fn execute_plan(plan: &DownloadPlan, reporter: &mut dyn ProgressReporter) -> Result<()> {
     let client = super::http::client()?;
     for task in &plan.tasks {

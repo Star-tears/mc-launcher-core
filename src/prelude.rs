@@ -1,3 +1,9 @@
+//! Common imports for launcher applications.
+//!
+//! This module re-exports the facade types most callers need for installation,
+//! launch command construction, progress reporting, compatibility handling, and
+//! error handling.
+
 pub use crate::{
     account::Account,
     command::builder::{LaunchCommand, LaunchOptions},

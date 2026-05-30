@@ -1,3 +1,10 @@
+//! Compatibility utilities and convenience helpers.
+//!
+//! Some functions in this module predate the [`crate::launcher::Launcher`]
+//! facade and are retained for compatibility. New code should prefer the
+//! facade for installation and command construction, while directory and
+//! version-list helpers remain useful for launcher setup screens.
+
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::{env, fs};

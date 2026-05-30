@@ -1,3 +1,5 @@
+//! Asset index and asset object installation helpers.
+
 use std::{
     collections::HashMap,
     fs,
@@ -15,18 +17,24 @@ use crate::{
 
 const RESOURCES_BASE: &str = "https://resources.download.minecraft.net";
 
+/// Minecraft asset index JSON.
 #[derive(Debug, Clone, Deserialize, Serialize, Default, PartialEq, Eq)]
 pub struct AssetIndexJson {
+    /// Asset entries keyed by logical asset name.
     #[serde(default)]
     pub objects: HashMap<String, AssetObject>,
 }
 
+/// One object entry from an asset index.
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct AssetObject {
+    /// SHA-1 hash that also determines the object storage path.
     pub hash: String,
+    /// Object size in bytes.
     pub size: i64,
 }
 
+/// Returns the local path for an asset index file.
 pub fn asset_index_path(minecraft_dir: impl AsRef<Path>, asset_index_id: &str) -> PathBuf {
     minecraft_dir
         .as_ref()
@@ -35,6 +43,7 @@ pub fn asset_index_path(minecraft_dir: impl AsRef<Path>, asset_index_id: &str) -
         .join(format!("{asset_index_id}.json"))
 }
 
+/// Returns the local content-addressed path for an asset object hash.
 pub fn asset_object_path(minecraft_dir: impl AsRef<Path>, hash: &str) -> PathBuf {
     let prefix = hash.get(..2).unwrap_or(hash);
     minecraft_dir
@@ -45,6 +54,9 @@ pub fn asset_object_path(minecraft_dir: impl AsRef<Path>, hash: &str) -> PathBuf
         .join(hash)
 }
 
+/// Plans the asset index download for a version.
+///
+/// Versions without asset metadata return an empty task list.
 pub fn plan_asset_index_download(
     version: &VersionJson,
     minecraft_dir: &Path,
@@ -60,6 +72,7 @@ pub fn plan_asset_index_download(
     }])
 }
 
+/// Plans all asset object downloads from an already-read asset index.
 pub fn plan_asset_object_downloads_from_index(
     index: &AssetIndexJson,
     minecraft_dir: impl AsRef<Path>,
@@ -84,6 +97,12 @@ pub fn plan_asset_object_downloads_from_index(
     }
 }
 
+/// Downloads the asset index and all referenced asset objects.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if download, checksum, filesystem, or JSON
+/// decoding fails.
 pub fn install_assets(
     version: &VersionJson,
     minecraft_dir: impl AsRef<Path>,

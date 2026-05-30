@@ -1,3 +1,5 @@
+//! Hashing helpers for installed files.
+
 use std::{
     fs::File,
     io::{BufReader, Read},
@@ -8,6 +10,11 @@ use sha1::{Digest, Sha1};
 
 use crate::Result;
 
+/// Calculates the SHA-1 digest of a file as lowercase hexadecimal.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if the file cannot be read.
 pub fn sha1_file(path: impl AsRef<Path>) -> Result<String> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);

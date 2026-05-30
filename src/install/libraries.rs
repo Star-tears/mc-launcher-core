@@ -1,3 +1,5 @@
+//! Library download planning.
+
 use std::path::Path;
 
 use crate::{
@@ -10,6 +12,11 @@ use crate::{
     Result,
 };
 
+/// Plans library and native-classifier downloads for the current platform.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if a library coordinate cannot be parsed.
 pub fn plan_library_downloads(
     libraries: &[Library],
     minecraft_dir: &Path,
@@ -17,6 +24,11 @@ pub fn plan_library_downloads(
     plan_library_downloads_for_platform(libraries, minecraft_dir, Platform::current())
 }
 
+/// Plans library and native-classifier downloads for an explicit platform.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError`] if a library coordinate cannot be parsed.
 pub fn plan_library_downloads_for_platform(
     libraries: &[Library],
     minecraft_dir: &Path,
