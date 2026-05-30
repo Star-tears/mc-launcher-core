@@ -132,6 +132,7 @@ pub struct LoggingFile {
 
 impl VersionJson {
     pub fn merge_child(mut self, child: &VersionJson) -> VersionJson {
+        let inherited_parent = child.inherits_from.clone();
         self.id = child.id.clone().or(self.id);
         self.inherits_from = child.inherits_from.clone().or(self.inherits_from);
         self.r#type = child.r#type.clone().or(self.r#type);
@@ -151,7 +152,7 @@ impl VersionJson {
             .or(self.minecraft_arguments);
         self.java_version = child.java_version.clone().or(self.java_version);
         self.logging.extend(child.logging.clone());
-        self.jar = child.jar.clone().or(self.jar);
+        self.jar = child.jar.clone().or(self.jar).or(inherited_parent);
         self.release_time = child.release_time.clone().or(self.release_time);
         self.time = child.time.clone().or(self.time);
         self.compliance_level = child.compliance_level.or(self.compliance_level);

@@ -4,6 +4,9 @@ use crate::{
     command::builder::{build_launch_command, LaunchCommand, LaunchOptions},
     core::version::VersionJson,
     install::{
+        client::{
+            fetch_vanilla_version, install_version_files, load_version_json, write_version_json,
+        },
         loader::{run_loader_installer, write_loader_profile, InstallerInvocation},
         request::{InstallRequest, InstallResult},
     },
@@ -12,7 +15,7 @@ use crate::{
         LoaderKind,
     },
     net::download::{execute_plan, DownloadPlan, DownloadTask},
-    progress::ProgressEvent,
+    progress::{ProgressEvent, ProgressReporter},
     LauncherError, Result,
 };
 
@@ -33,32 +36,41 @@ impl Launcher {
     }
 
     pub fn install(&self, request: InstallRequest) -> Result<InstallResult> {
-        if let Some(loader) = request.loader {
+        let mut reporter = |_event: ProgressEvent| {};
+        self.install_with_progress(request, &mut reporter)
+    }
+
+    pub fn install_with_progress(
+        &self,
+        request: InstallRequest,
+        reporter: &mut dyn ProgressReporter,
+    ) -> Result<InstallResult> {
+        if let Some(loader) = request.loader.clone() {
             match loader {
                 LoaderSpec::Fabric { version } => {
+                    self.install_vanilla_version(&request.minecraft_version, reporter)?;
                     let loader_version = resolve_fabric_loader_version(version)?;
                     let profile = crate::loader::fabric::fetch_profile(
                         &request.minecraft_version,
                         &loader_version,
                     )?;
+                    let version_id = version_id(&profile, "loader profile")?.to_string();
                     write_loader_profile(&self.minecraft_dir, &profile)?;
-                    let version_id = profile.id.ok_or_else(|| LauncherError::MissingField {
-                        context: "loader profile".to_string(),
-                        field: "id".to_string(),
-                    })?;
+                    let merged = self.load_version(&version_id)?;
+                    install_version_files(&merged, &self.minecraft_dir, reporter)?;
                     return Ok(InstallResult { version_id });
                 }
                 LoaderSpec::Quilt { version } => {
+                    self.install_vanilla_version(&request.minecraft_version, reporter)?;
                     let loader_version = resolve_quilt_loader_version(version)?;
                     let profile = crate::loader::quilt::fetch_profile(
                         &request.minecraft_version,
                         &loader_version,
                     )?;
+                    let version_id = version_id(&profile, "loader profile")?.to_string();
                     write_loader_profile(&self.minecraft_dir, &profile)?;
-                    let version_id = profile.id.ok_or_else(|| LauncherError::MissingField {
-                        context: "loader profile".to_string(),
-                        field: "id".to_string(),
-                    })?;
+                    let merged = self.load_version(&version_id)?;
+                    install_version_files(&merged, &self.minecraft_dir, reporter)?;
                     return Ok(InstallResult { version_id });
                 }
                 LoaderSpec::Forge { version } => {
@@ -105,6 +117,7 @@ impl Launcher {
             }
         }
 
+        self.install_vanilla_version(&request.minecraft_version, reporter)?;
         Ok(InstallResult {
             version_id: request.minecraft_version,
         })
@@ -117,6 +130,30 @@ impl Launcher {
     ) -> Result<LaunchCommand> {
         build_launch_command(version, self.minecraft_dir.clone(), options)
     }
+
+    pub fn load_version(&self, version_id: &str) -> Result<VersionJson> {
+        load_version_json(&self.minecraft_dir, version_id)
+    }
+
+    fn install_vanilla_version(
+        &self,
+        version_id: &str,
+        reporter: &mut dyn ProgressReporter,
+    ) -> Result<()> {
+        let version = fetch_vanilla_version(version_id)?;
+        write_version_json(&self.minecraft_dir, &version)?;
+        install_version_files(&version, &self.minecraft_dir, reporter)
+    }
+}
+
+fn version_id<'a>(version: &'a VersionJson, context: &str) -> Result<&'a str> {
+    version
+        .id
+        .as_deref()
+        .ok_or_else(|| LauncherError::MissingField {
+            context: context.to_string(),
+            field: "id".to_string(),
+        })
 }
 
 fn resolve_fabric_loader_version(version: LoaderVersion) -> Result<String> {

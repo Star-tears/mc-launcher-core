@@ -96,7 +96,7 @@ pub fn build_launch_command_for_platform(
     let game_dir = options
         .game_directory
         .clone()
-        .unwrap_or_else(|| minecraft_dir.clone());
+        .unwrap_or_else(|| minecraft_dir.join("versions").join(version_id));
     let natives_dir = options.natives_directory.clone().unwrap_or_else(|| {
         minecraft_dir
             .join("versions")

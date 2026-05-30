@@ -36,6 +36,7 @@ pub fn plan_vanilla_downloads_for_platform(
             context: "version json".to_string(),
             field: "id".to_string(),
         })?;
+    let jar_id = version.jar.as_deref().unwrap_or(version_id);
 
     let mut plan = DownloadPlan::default();
     if let Some(client) = version.downloads.get("client") {
@@ -43,10 +44,10 @@ pub fn plan_vanilla_downloads_for_platform(
             url: client.url.clone(),
             destination: minecraft_dir
                 .join("versions")
-                .join(version_id)
-                .join(format!("{version_id}.jar")),
+                .join(jar_id)
+                .join(format!("{jar_id}.jar")),
             checksum: Some(Checksum::Sha1(client.sha1.clone())),
-            label: format!("client {version_id}"),
+            label: format!("client {jar_id}"),
         });
     }
 

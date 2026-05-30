@@ -91,6 +91,55 @@ fn legacy_lwjgl2_version() -> VersionJson {
     .unwrap()
 }
 
+fn modern_lwjgl3_version() -> VersionJson {
+    serde_json::from_str(
+        r#"{
+            "id":"1.18.2",
+            "type":"release",
+            "mainClass":"net.minecraft.client.main.Main",
+            "arguments":{"game":[],"jvm":[]},
+            "downloads":{
+                "client":{
+                    "sha1":"client-sha1",
+                    "size":1,
+                    "url":"https://example.test/client.jar"
+                }
+            },
+            "libraries":[
+                {
+                    "name":"com.example:keep:1.0",
+                    "downloads":{
+                        "artifact":{
+                            "path":"com/example/keep/1.0/keep-1.0.jar",
+                            "sha1":"keep-sha1",
+                            "size":10,
+                            "url":"https://example.test/keep.jar"
+                        }
+                    }
+                },
+                {"name":"ca.weblite:java-objc-bridge:1.1"},
+                {"name":"org.lwjgl:lwjgl:3.2.2"},
+                {"name":"org.lwjgl:lwjgl-glfw:3.2.2"},
+                {
+                    "name":"org.lwjgl:lwjgl:3.2.2",
+                    "natives":{"osx":"natives-macos"},
+                    "downloads":{
+                        "classifiers":{
+                            "natives-macos":{
+                                "path":"org/lwjgl/lwjgl/3.2.2/lwjgl-3.2.2-natives-macos.jar",
+                                "sha1":"old-native-sha1",
+                                "size":10,
+                                "url":"https://example.test/old-native.jar"
+                            }
+                        }
+                    }
+                }
+            ]
+        }"#,
+    )
+    .unwrap()
+}
+
 #[test]
 fn recommends_legacy_lwjgl2_patch_only_for_macos_arm64() {
     let version = legacy_lwjgl2_version();
@@ -211,6 +260,53 @@ fn classpath_uses_download_artifact_paths_after_patch() {
     assert!(!classpath.contains(
         "2.9.4-nightly-20150209-mmachina.2/lwjgl-platform-2.9.4-nightly-20150209-mmachina.2.jar"
     ));
+}
+
+#[test]
+fn replaces_lwjgl3_libraries_with_arm64_metadata_on_macos_arm64() {
+    let version = modern_lwjgl3_version();
+
+    let patched = apply_compatibility(&version, mac_arm64(), CompatibilityPolicy::Auto);
+    let names = patched
+        .version
+        .libraries
+        .iter()
+        .map(|library| library.name.as_str())
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        patched.applied_patches,
+        vec![CompatibilityPatch::MacArm64Lwjgl3]
+    );
+    assert!(names.contains(&"com.example:keep:1.0"));
+    assert!(!names
+        .iter()
+        .any(|name| name.starts_with("org.lwjgl:lwjgl:3.2.2")));
+    assert!(names.contains(&"org.lwjgl:lwjgl:3.3.1-mmachina.1"));
+    assert!(names.contains(&"org.lwjgl:lwjgl-glfw:3.3.1-mmachina.1"));
+    assert!(names.contains(&"ca.weblite:java-objc-bridge:1.1.0-mmachina.1"));
+}
+
+#[test]
+fn plans_lwjgl3_arm64_native_classifiers() {
+    let version = modern_lwjgl3_version();
+    let dir = tempfile::tempdir().unwrap();
+
+    let plan = plan_vanilla_downloads_for_platform(
+        &version,
+        dir.path(),
+        mac_arm64(),
+        CompatibilityPolicy::Auto,
+    )
+    .unwrap();
+
+    assert!(plan.tasks.iter().any(|task| task
+        .url
+        .contains("MinecraftMachina/lwjgl3/releases/download/3.3.1-mmachina.1")));
+    assert!(plan.tasks.iter().any(|task| task
+        .destination
+        .to_string_lossy()
+        .ends_with("lwjgl-3.3.1-mmachina.1-natives-macos.jar")));
 }
 
 #[test]

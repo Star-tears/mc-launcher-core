@@ -25,6 +25,7 @@ fn missing_version_command_returns_error() {
 }
 
 #[test]
+#[ignore = "performs a complete network install"]
 fn vanilla_install_wrapper_accepts_request_shape() {
     let dir = tempfile::tempdir().unwrap();
     let result = install_minecraft_version("1.20.4", dir.path(), &Default::default());

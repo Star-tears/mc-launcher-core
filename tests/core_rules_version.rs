@@ -84,3 +84,29 @@ fn child_version_overrides_main_class_and_extends_libraries() {
     assert_eq!(merged.libraries.len(), 2);
     assert_eq!(merged.arguments.jvm.len(), 3);
 }
+
+#[test]
+fn inherited_loader_version_uses_parent_client_jar() {
+    let parent: VersionJson = serde_json::from_str(
+        r#"{
+            "id":"1.20.1",
+            "mainClass":"net.minecraft.client.main.Main",
+            "arguments":{"game":[],"jvm":[]}
+        }"#,
+    )
+    .unwrap();
+    let child: VersionJson = serde_json::from_str(
+        r#"{
+            "id":"fabric-loader-0.19.2-1.20.1",
+            "inheritsFrom":"1.20.1",
+            "mainClass":"net.fabricmc.loader.impl.launch.knot.KnotClient",
+            "arguments":{"game":[],"jvm":[]}
+        }"#,
+    )
+    .unwrap();
+
+    let merged = parent.merge_child(&child);
+
+    assert_eq!(merged.id.as_deref(), Some("fabric-loader-0.19.2-1.20.1"));
+    assert_eq!(merged.jar.as_deref(), Some("1.20.1"));
+}

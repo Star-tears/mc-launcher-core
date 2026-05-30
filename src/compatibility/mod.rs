@@ -17,6 +17,7 @@ pub enum CompatibilityPolicy {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompatibilityPatch {
     LegacyMacArm64Lwjgl2,
+    MacArm64Lwjgl3,
 }
 
 /// Describes how a launcher should host the game process for window creation.
@@ -80,6 +81,24 @@ pub fn apply_compatibility(
         };
     }
 
+    if needs_macos_arm64_lwjgl3_patch(version, platform) {
+        return CompatibilityResult {
+            version: apply_macos_arm64_lwjgl3_patch(version),
+            applied_patches: vec![CompatibilityPatch::MacArm64Lwjgl3],
+            java_runtime: Some(JavaRuntimeHint {
+                major_version: version
+                    .java_version
+                    .as_ref()
+                    .map(|java| java.major_version)
+                    .unwrap_or(8),
+                arch: Arch::Aarch64,
+                distribution_hint: "arm64 Java runtime matching version.json javaVersion",
+                reason: "Older LWJGL 3 Minecraft versions need arm64 macOS native libraries on Apple Silicon.",
+            }),
+            windowing: current_process_windowing_hint(),
+        };
+    }
+
     CompatibilityResult {
         version: version.clone(),
         applied_patches: Vec::new(),
@@ -113,12 +132,35 @@ fn needs_legacy_macos_lwjgl2_patch(version: &VersionJson, platform: Platform) ->
             .any(|library| library.name.starts_with("org.lwjgl.lwjgl:lwjgl:"))
 }
 
+fn needs_macos_arm64_lwjgl3_patch(version: &VersionJson, platform: Platform) -> bool {
+    platform.os == Os::MacOs
+        && platform.arch == Arch::Aarch64
+        && version
+            .libraries
+            .iter()
+            .any(|library| library.name.starts_with("org.lwjgl:"))
+        && !version.libraries.iter().any(|library| {
+            library.name.contains("3.3.1-mmachina.1")
+                || library.name.contains(":natives-macos-arm64")
+                || library.name.contains(":natives-osx-arm64")
+        })
+}
+
 fn apply_legacy_macos_lwjgl2_patch(version: &VersionJson) -> VersionJson {
     let mut patched = version.clone();
     patched
         .libraries
         .retain(|library| !is_legacy_lwjgl2_replaced_library(&library.name));
     patched.libraries.extend(legacy_macos_lwjgl2_libraries());
+    patched
+}
+
+fn apply_macos_arm64_lwjgl3_patch(version: &VersionJson) -> VersionJson {
+    let mut patched = version.clone();
+    patched
+        .libraries
+        .retain(|library| !is_lwjgl3_replaced_library(&library.name));
+    patched.libraries.extend(macos_arm64_lwjgl3_libraries());
     patched
 }
 
@@ -132,6 +174,10 @@ fn is_legacy_lwjgl2_replaced_library(name: &str) -> bool {
     ]
     .iter()
     .any(|prefix| name.starts_with(prefix))
+}
+
+fn is_lwjgl3_replaced_library(name: &str) -> bool {
+    name.starts_with("org.lwjgl:") || name.starts_with("ca.weblite:java-objc-bridge:")
 }
 
 fn legacy_macos_lwjgl2_libraries() -> Vec<Library> {
@@ -189,6 +235,67 @@ fn legacy_macos_lwjgl2_libraries() -> Vec<Library> {
     ]
 }
 
+fn macos_arm64_lwjgl3_libraries() -> Vec<Library> {
+    vec![
+        artifact_library(
+            "ca.weblite:java-objc-bridge:1.1.0-mmachina.1",
+            "https://github.com/MinecraftMachina/Java-Objective-C-Bridge/releases/download/1.1.0-mmachina.1/java-objc-bridge-1.1.jar",
+            "369a83621e3c65496348491e533cb97fe5f2f37d",
+            91947,
+            None,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-glfw",
+            "e9a101bca4fa30d26b21b526ff28e7c2d8927f1b",
+            130128,
+            "71d793d0a5a42e3dfe78eb882abc2523a2c6b496",
+            129076,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-jemalloc",
+            "4fb94224378d3588d52d2beb172f2eeafea2d546",
+            36976,
+            "b0be721188d2e7195798780b1c5fe7eafe8091c1",
+            103478,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-openal",
+            "d48e753d85916fc8a200ccddc709b36e3865cc4e",
+            88880,
+            "6b80fc0b982a0723b141e88859c42d6f71bd723f",
+            346131,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-opengl",
+            "962c2a8d2a8cdd3b89de3d78d766ab5e2133c2f4",
+            929233,
+            "bb575058e0372f515587b5d2d04ff7db185f3ffe",
+            41667,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-stb",
+            "703e4b533e2542560e9f94d6d8bd148be1c1d572",
+            113273,
+            "98f0ad956c754723ef354d50057cc30417ef376a",
+            178409,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl-tinyfd",
+            "1203660b3131cbb8681b17ce6437412545be95e0",
+            6802,
+            "015b931a2daba8f0c317d84c9d14e8e98ae56e0c",
+            41384,
+        ),
+        lwjgl3_macos_arm64_library(
+            "lwjgl",
+            "8e664dd69ad7bbcf2053da23efc7848e39e498db",
+            719038,
+            "984df31fadaab86838877b112e5b4e4f68a00ccf",
+            42693,
+        ),
+    ]
+}
+
 fn artifact_library(
     name: &str,
     url: &str,
@@ -218,6 +325,58 @@ fn artifact_library(
         }),
         natives: None,
         extract: None,
+    }
+}
+
+fn lwjgl3_macos_arm64_library(
+    artifact: &str,
+    artifact_sha1: &str,
+    artifact_size: i64,
+    native_sha1: &str,
+    native_size: i64,
+) -> Library {
+    let name = format!("org.lwjgl:{artifact}:3.3.1-mmachina.1");
+    let artifact_path = MavenCoordinate::parse(&name)
+        .expect("static coordinate")
+        .artifact_path()
+        .to_string_lossy()
+        .to_string();
+    let native_path = format!(
+        "org/lwjgl/{artifact}/3.3.1-mmachina.1/{artifact}-3.3.1-mmachina.1-natives-macos.jar"
+    );
+    let release_base =
+        "https://github.com/MinecraftMachina/lwjgl3/releases/download/3.3.1-mmachina.1";
+
+    let mut classifiers = HashMap::new();
+    classifiers.insert(
+        "natives-macos".to_string(),
+        LibraryArtifact {
+            path: native_path,
+            url: format!("{release_base}/{artifact}-natives-macos-arm64.jar"),
+            sha1: native_sha1.to_string(),
+            size: native_size,
+        },
+    );
+    let mut natives = HashMap::new();
+    natives.insert("osx".to_string(), "natives-macos".to_string());
+    let mut extract = HashMap::new();
+    extract.insert("exclude".to_string(), vec!["META-INF/".to_string()]);
+
+    Library {
+        name,
+        url: None,
+        rules: Vec::new(),
+        downloads: Some(LibraryDownloads {
+            artifact: Some(LibraryArtifact {
+                path: artifact_path,
+                url: format!("{release_base}/{artifact}.jar"),
+                sha1: artifact_sha1.to_string(),
+                size: artifact_size,
+            }),
+            classifiers,
+        }),
+        natives: Some(natives),
+        extract: Some(extract),
     }
 }
 

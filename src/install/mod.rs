@@ -1,6 +1,8 @@
 pub mod assets;
+pub mod client;
 pub mod libraries;
 pub mod loader;
+pub mod natives;
 pub mod request;
 pub mod vanilla;
 
