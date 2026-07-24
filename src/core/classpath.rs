@@ -58,6 +58,10 @@ pub fn classpath_entries_for_platform(
             );
         }
     }
+
+    // Forge manages the Minecraft client through its module path.
+    // Do not append the version jar to the classpath, or Java will detect
+    // duplicate modules/packages during startup.
     let is_forge = version
         .libraries
         .iter()
