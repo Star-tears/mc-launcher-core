@@ -108,7 +108,10 @@ impl Launcher {
                     return Ok(InstallResult { version_id });
                 }
                 LoaderSpec::Forge { version } => {
-                    let loader_version = resolve_forge_loader_version(version)?;
+                    let loader_version = resolve_forge_loader_version(
+                        &request.minecraft_version,
+                        version,
+                    )?;
                     let installer_path = download_installer(
                         &self.minecraft_dir,
                         "forge",
@@ -232,17 +235,25 @@ fn resolve_quilt_loader_version(version: LoaderVersion) -> Result<String> {
     }
 }
 
-fn resolve_forge_loader_version(version: LoaderVersion) -> Result<String> {
+fn resolve_forge_loader_version(
+    minecraft_version: &str,
+    version: LoaderVersion,
+) -> Result<String> {
     match version {
         LoaderVersion::Exact(version) => Ok(version),
+
         LoaderVersion::Latest | LoaderVersion::LatestStable => {
             let versions = crate::loader::forge::list_forge_versions()?;
+
             versions
+                .into_iter()
+                .filter(|v| {
+                    v.starts_with(&format!("{minecraft_version}-"))
+                })
                 .last()
-                .cloned()
                 .ok_or_else(|| LauncherError::LoaderVersionNotFound {
                     loader: LoaderKind::Forge,
-                    version: "latest".to_string(),
+                    version: format!("latest for Minecraft {}", minecraft_version),
                 })
         }
     }
