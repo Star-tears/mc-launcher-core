@@ -4,6 +4,7 @@ use std::path::Path;
 
 use crate::{
     core::{
+        maven::MavenCoordinate,
         rules::{evaluate_rules, FeatureSet},
         version::{Library, LibraryArtifact},
     },
@@ -48,6 +49,27 @@ pub fn plan_library_downloads_for_platform(
                     tasks.push(download_task(library, artifact, minecraft_dir));
                 }
             }
+        } else if library.natives.is_none() {
+            // Fabric/Quilt-style libraries: no `downloads` block, just a
+            // Maven coordinate + repo base URL. Mirrors the fallback in
+            // classpath.rs — build the artifact path and repo URL manually.
+            let coordinate = MavenCoordinate::parse(&library.name)?;
+            let path = coordinate.artifact_path();
+            let base_url = library
+                .url
+                .clone()
+                .unwrap_or_else(|| "https://maven.fabricmc.net/".to_string());
+            let url = format!(
+                "{}/{}",
+                base_url.trim_end_matches('/'),
+                path.to_string_lossy().replace('\\', "/")
+            );
+            tasks.push(DownloadTask {
+                url,
+                destination: minecraft_dir.join("libraries").join(&path),
+                checksum: None,
+                label: format!("library {}", library.name),
+            });
         }
     }
     Ok(tasks)
