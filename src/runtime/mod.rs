@@ -98,8 +98,7 @@ pub fn install_jvm_runtime(
         .unwrap_or(&HashMap::new())
         .get(jvm_version)
         .unwrap_or(&Vec::new())
-        .len()
-        == 0
+        .is_empty()
     {
         return Err("platform manifest not exist.".into());
     }
@@ -167,7 +166,7 @@ pub fn install_jvm_runtime(
             } else if vtype == "link" {
                 check_path_inside_minecraft_directory(
                     &minecraft_directory,
-                    base_path.join(&value.target.as_ref().map_or("".to_string(), |s| s.clone())),
+                    base_path.join(value.target.as_deref().unwrap_or("")),
                 )?;
                 if !current_path.parent().unwrap().exists() {
                     let _ = fs::create_dir_all(current_path.parent().unwrap());
@@ -294,7 +293,7 @@ pub fn get_jvm_runtime_information(
         .unwrap_or(&Vec::new())
         .is_empty()
     {
-        return Err(format!("this platform not supported yet.").into());
+        return Err("this platform not supported yet.".into());
     }
     let runtime_list_json_entry = manifest_data
         .get(&platform_string)
@@ -322,12 +321,10 @@ pub fn get_version_runtime_information(
         Ok(json_data) => json_data,
         Err(_) => return None,
     };
-    if data.java_version.is_none() {
-        return None;
-    }
+    let java_version = data.java_version?;
     Some(VersionRuntimeInformation {
-        name: data.java_version.clone().unwrap().component,
-        java_major_version: data.java_version.clone().unwrap().major_version,
+        name: java_version.component,
+        java_major_version: java_version.major_version,
     })
 }
 
@@ -344,7 +341,7 @@ mod test {
     fn debug_get_jvm_runtimes() {
         match get_jvm_runtimes() {
             Ok(v) => println!("{:?}", v),
-            Err(e) => println!("{}", e.to_string()),
+            Err(e) => println!("{e}"),
         }
     }
 }

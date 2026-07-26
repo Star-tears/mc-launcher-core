@@ -33,7 +33,7 @@ pub fn check_path_inside_minecraft_directory(
     let minecraft_directory = minecraft_directory.as_ref();
     let path = path.as_ref();
 
-    if !path.starts_with(&minecraft_directory) {
+    if !path.starts_with(minecraft_directory) {
         return Err(format!(
             "{} is outside Minecraft directory {}",
             path.to_string_lossy(),
@@ -128,11 +128,13 @@ fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool 
 
     if let Some(os) = &rule.os {
         if let Some(name) = os.get("name") {
-            if name == "windows" && std::env::consts::OS != "windows" {
-                return return_value;
-            } else if name == "osx" && std::env::consts::OS != "macos" {
-                return return_value;
-            } else if name == "linux" && std::env::consts::OS != "linux" {
+            let os_mismatch = match name.as_str() {
+                "windows" => std::env::consts::OS != "windows",
+                "osx" => std::env::consts::OS != "macos",
+                "linux" => std::env::consts::OS != "linux",
+                _ => false,
+            };
+            if os_mismatch {
                 return return_value;
             }
         }
@@ -152,35 +154,29 @@ fn parse_single_rule(rule: &ClientJsonRule, options: &MinecraftOptions) -> bool 
     }
 
     if let Some(features) = &rule.features {
-        if let Some(_) = features.get("has_custom_resolution") {
-            if !options.custom_resolution.unwrap_or(false) {
-                return return_value;
-            }
+        if features.contains_key("has_custom_resolution")
+            && !options.custom_resolution.unwrap_or(false)
+        {
+            return return_value;
         }
-        if let Some(_) = features.get("is_demo_user") {
-            if !options.demo.unwrap_or(false) {
-                return return_value;
-            }
+        if features.contains_key("is_demo_user") && !options.demo.unwrap_or(false) {
+            return return_value;
         }
-        if let Some(_) = features.get("has_quick_plays_support") {
-            if options.quick_play_path.is_none() {
-                return return_value;
-            }
+        if features.contains_key("has_quick_plays_support") && options.quick_play_path.is_none() {
+            return return_value;
         }
-        if let Some(_) = features.get("is_quick_play_singleplayer") {
-            if options.quick_play_singleplayer.is_none() {
-                return return_value;
-            }
+        if features.contains_key("is_quick_play_singleplayer")
+            && options.quick_play_singleplayer.is_none()
+        {
+            return return_value;
         }
-        if let Some(_) = features.get("is_quick_play_multiplayer") {
-            if options.quick_play_multiplayer.is_none() {
-                return return_value;
-            }
+        if features.contains_key("is_quick_play_multiplayer")
+            && options.quick_play_multiplayer.is_none()
+        {
+            return return_value;
         }
-        if let Some(_) = features.get("is_quick_play_realms") {
-            if options.quick_play_realms.is_none() {
-                return return_value;
-            }
+        if features.contains_key("is_quick_play_realms") && options.quick_play_realms.is_none() {
+            return return_value;
         }
     }
 
@@ -323,13 +319,9 @@ static USER_AGENT_CACHE: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(N
 // return the user agent of mc-launcher-core
 pub fn get_user_agent() -> String {
     let mut cache = USER_AGENT_CACHE.lock().unwrap();
-    if let Some(ref user_agent) = *cache {
-        return user_agent.clone();
-    } else {
-        let user_agent = "mc-launcher-core/skycrafting".to_string();
-        *cache = Some(user_agent.clone());
-        return user_agent;
-    }
+    cache
+        .get_or_insert_with(|| "mc-launcher-core/skycrafting".to_string())
+        .clone()
 }
 
 pub fn get_requests_response_cache(url: &str) -> Result<String, reqwest::Error> {
