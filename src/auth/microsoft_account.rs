@@ -169,10 +169,8 @@ pub fn parse_auth_code_url(
                     Some((key, value.to_string()))
                 })
                 .collect();
-            if state.is_some() {
-                if state != query_pairs.get("state").cloned() {
-                    return Err("state not equal.".into());
-                }
+            if state.is_some() && state != query_pairs.get("state").cloned() {
+                return Err("state not equal.".into());
             }
             if let Some(code) = query_pairs.get("code") {
                 return Ok(code.clone());

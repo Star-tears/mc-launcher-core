@@ -1,0 +1,4 @@
+interface:
+  display_name: "MC Launcher Core Development"
+  short_description: "Manage feature branches, dev merges, and releases"
+  default_prompt: "Use $develop-mc-launcher-core to implement this change through the project dev-branch workflow."

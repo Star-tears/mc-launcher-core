@@ -153,7 +153,7 @@ impl ClientJson {
             self.minecraft_arguments = Some(minecraft_arguments.clone());
         }
         self.time = other.time.clone();
-        self.minimum_launcher_version = other.minimum_launcher_version.clone();
+        self.minimum_launcher_version = other.minimum_launcher_version;
         if let Some(jar) = &other.jar {
             self.jar = Some(jar.clone());
         }
@@ -164,8 +164,8 @@ impl ClientJson {
             self.inherits_from = Some(inherits_from.clone());
         }
         if let Some(libraries) = &other.libraries {
-            let mut tmpv = self.libraries.clone().unwrap_or(vec![]).clone();
-            tmpv.extend_from_slice(&libraries);
+            let mut tmpv = self.libraries.clone().unwrap_or_default();
+            tmpv.extend_from_slice(libraries);
             self.libraries = Some(tmpv);
         }
 
@@ -189,7 +189,7 @@ impl ClientJson {
             self.java_version = Some(java_version.clone());
         }
         if let Some(compliance_level) = &other.compliance_level {
-            self.compliance_level = Some(compliance_level.clone());
+            self.compliance_level = Some(*compliance_level);
         }
     }
 }

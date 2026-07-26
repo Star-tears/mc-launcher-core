@@ -90,7 +90,7 @@ pub fn extract_natives(
         data = inherit_json(&data, &path)?;
     }
 
-    for library in &data.libraries.unwrap_or(Vec::new()) {
+    for library in &data.libraries.unwrap_or_default() {
         if let Some(rules) = &library.rules {
             if !parse_rule_list(rules, &MinecraftOptions::default()) {
                 continue;
@@ -98,7 +98,7 @@ pub fn extract_natives(
         }
 
         let current_path = get_library_path(&library.name.clone().unwrap(), &path);
-        let native = get_natives(&library);
+        let native = get_natives(library);
 
         if native.is_empty() {
             continue;

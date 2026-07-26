@@ -30,8 +30,7 @@ pub fn get_minecraft_directory() -> PathBuf {
         // Windows
         let home = env::var("APPDATA").unwrap_or_else(|_| {
             // If APPDATA is not set, use the default path
-            let home = env::var("USERPROFILE").expect("USERPROFILE is not set");
-            home
+            env::var("USERPROFILE").expect("USERPROFILE is not set")
         });
         let appdata = format!(r"{}\.minecraft", home);
         PathBuf::from(appdata)
@@ -148,8 +147,8 @@ pub fn get_java_executable() -> Option<String> {
             }
         }
 
-        if let Ok(_) =
-            fs::metadata(r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe")
+        if fs::metadata(r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe")
+            .is_ok()
         {
             return Some(
                 r"C:\Program Files (x86)\Common Files\Oracle\Java\javapath\javaw.exe".to_string(),
@@ -244,10 +243,7 @@ pub fn is_vanilla_version(version: &str) -> bool {
 }
 
 pub fn is_platform_supported() -> bool {
-    match env::consts::OS {
-        "windows" | "macos" | "linux" => true,
-        _ => false,
-    }
+    matches!(env::consts::OS, "windows" | "macos" | "linux")
 }
 
 pub fn is_minecraft_installed(minecraft_directory: impl AsRef<Path>) -> bool {
@@ -334,8 +330,8 @@ mod tests {
 
     #[test]
     fn test_is_vanilla_version() {
-        assert_eq!(is_vanilla_version("1.20"), true);
-        assert_eq!(is_vanilla_version("20.24"), false);
+        assert!(is_vanilla_version("1.20"));
+        assert!(!is_vanilla_version("20.24"));
     }
 
     #[test]
