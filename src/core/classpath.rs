@@ -59,14 +59,25 @@ pub fn classpath_entries_for_platform(
         }
     }
 
-    let jar_id = version.jar.as_ref().or(version.id.as_ref());
-    if let Some(id) = jar_id {
-        entries.push(
-            minecraft_dir
-                .join("versions")
-                .join(id)
-                .join(format!("{id}.jar")),
-        );
+    // Forge manages the Minecraft client through its module path.
+    // Do not append the version jar to the classpath, or Java will detect
+    // duplicate modules/packages during startup.
+    let is_forge = version
+        .libraries
+        .iter()
+        .any(|l| l.name.starts_with("net.minecraftforge:"));
+
+    if !is_forge {
+        let jar_id = version.jar.as_ref().or(version.id.as_ref());
+
+        if let Some(id) = jar_id {
+            entries.push(
+                minecraft_dir
+                    .join("versions")
+                    .join(id)
+                    .join(format!("{id}.jar")),
+            );
+        }
     }
 
     Ok(entries)
