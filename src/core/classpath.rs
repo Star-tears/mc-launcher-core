@@ -1,6 +1,9 @@
 //! Classpath construction from version metadata.
 
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+};
 
 use crate::{
     core::{
@@ -38,6 +41,7 @@ pub fn classpath_entries_for_platform(
 ) -> Result<Vec<PathBuf>> {
     let minecraft_dir = minecraft_dir.as_ref();
     let mut entries = Vec::new();
+    let mut seen = HashSet::new();
 
     for library in &version.libraries {
         if !evaluate_rules(&library.rules, platform, &FeatureSet::default()) {
@@ -48,39 +52,47 @@ pub fn classpath_entries_for_platform(
             .as_ref()
             .and_then(|downloads| downloads.artifact.as_ref())
         {
-            entries.push(minecraft_dir.join("libraries").join(&artifact.path));
+            let path = minecraft_dir.join("libraries").join(&artifact.path);
+            if seen.insert(path.clone()) {
+                entries.push(path);
+            }
         } else if library.natives.is_none() {
             let coordinate = MavenCoordinate::parse(&library.name)?;
-            entries.push(
-                minecraft_dir
-                    .join("libraries")
-                    .join(coordinate.artifact_path()),
-            );
+            let path = minecraft_dir
+                .join("libraries")
+                .join(coordinate.artifact_path());
+            if seen.insert(path.clone()) {
+                entries.push(path);
+            }
         }
     }
 
-    // Forge manages the Minecraft client through its module path.
-    // Do not append the version jar to the classpath, or Java will detect
-    // duplicate modules/packages during startup.
-    let is_forge = version
-        .libraries
-        .iter()
-        .any(|l| l.name.starts_with("net.minecraftforge:"));
-
-    if !is_forge {
+    if !forge_bootstrap_manages_client_jar(version) {
         let jar_id = version.jar.as_ref().or(version.id.as_ref());
 
         if let Some(id) = jar_id {
-            entries.push(
-                minecraft_dir
-                    .join("versions")
-                    .join(id)
-                    .join(format!("{id}.jar")),
-            );
+            let path = minecraft_dir
+                .join("versions")
+                .join(id)
+                .join(format!("{id}.jar"));
+            if seen.insert(path.clone()) {
+                entries.push(path);
+            }
         }
     }
 
     Ok(entries)
+}
+
+fn forge_bootstrap_manages_client_jar(version: &VersionJson) -> bool {
+    // Modern Forge bootstrap launchers load Minecraft through their module
+    // layer. Appending the inherited client jar to the ordinary classpath
+    // makes Java see Minecraft twice and fail with a ResolutionException.
+    matches!(
+        version.main_class.as_deref(),
+        Some("cpw.mods.bootstraplauncher.BootstrapLauncher")
+            | Some("net.minecraftforge.bootstrap.ForgeBootstrap")
+    )
 }
 
 /// Joins classpath entries with the platform separator.

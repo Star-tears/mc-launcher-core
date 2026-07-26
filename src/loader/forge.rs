@@ -64,6 +64,27 @@ pub fn list_forge_versions() -> Result<Vec<String>> {
     Ok(parse_maven_metadata(&http::get_text(FORGE_METADATA_URL)?)?.versions)
 }
 
+/// Returns the newest advertised Forge version for a Minecraft version.
+///
+/// # Errors
+///
+/// Returns [`crate::LauncherError::LoaderVersionNotFound`] when the metadata
+/// does not contain a matching Forge version.
+pub fn latest_for_minecraft<'a>(
+    versions: &'a [String],
+    minecraft_version: &str,
+) -> Result<&'a str> {
+    let prefix = format!("{minecraft_version}-");
+    versions
+        .iter()
+        .rfind(|version| version.starts_with(&prefix))
+        .map(String::as_str)
+        .ok_or_else(|| LauncherError::LoaderVersionNotFound {
+            loader: crate::loader::LoaderKind::Forge,
+            version: format!("latest for Minecraft {minecraft_version}"),
+        })
+}
+
 /// Converts a Forge version into the installed profile id.
 ///
 /// # Errors

@@ -108,6 +108,7 @@ impl Launcher {
                     return Ok(InstallResult { version_id });
                 }
                 LoaderSpec::Forge { version } => {
+                    self.install_vanilla_version(&request.minecraft_version, reporter)?;
                     let loader_version =
                         resolve_forge_loader_version(&request.minecraft_version, version)?;
                     let installer_path = download_installer(
@@ -122,13 +123,14 @@ impl Launcher {
                         installer_path,
                         minecraft_dir: self.minecraft_dir.clone(),
                     })?;
-                    return Ok(InstallResult {
-                        version_id: crate::loader::forge::forge_installed_version_id(
-                            &loader_version,
-                        )?,
-                    });
+                    let version_id =
+                        crate::loader::forge::forge_installed_version_id(&loader_version)?;
+                    let merged = self.load_version(&version_id)?;
+                    install_version_files(&merged, &self.minecraft_dir, reporter)?;
+                    return Ok(InstallResult { version_id });
                 }
                 LoaderSpec::NeoForge { version } => {
+                    self.install_vanilla_version(&request.minecraft_version, reporter)?;
                     let loader_version =
                         resolve_neoforge_loader_version(&request.minecraft_version, version)?;
                     let installer_path = download_installer(
@@ -143,12 +145,13 @@ impl Launcher {
                         installer_path,
                         minecraft_dir: self.minecraft_dir.clone(),
                     })?;
-                    return Ok(InstallResult {
-                        version_id: crate::loader::neoforge::neoforge_installed_version_id(
-                            &request.minecraft_version,
-                            &loader_version,
-                        ),
-                    });
+                    let version_id = crate::loader::neoforge::neoforge_installed_version_id(
+                        &request.minecraft_version,
+                        &loader_version,
+                    );
+                    let merged = self.load_version(&version_id)?;
+                    install_version_files(&merged, &self.minecraft_dir, reporter)?;
+                    return Ok(InstallResult { version_id });
                 }
             }
         }
@@ -212,18 +215,11 @@ fn version_id<'a>(version: &'a VersionJson, context: &str) -> Result<&'a str> {
 fn resolve_fabric_loader_version(version: LoaderVersion) -> Result<String> {
     match version {
         LoaderVersion::Exact(version) => Ok(version),
-
         LoaderVersion::Latest | LoaderVersion::LatestStable => {
             let versions = crate::loader::fabric::list_loader_versions()?;
-
-            versions
-                .into_iter()
-                .find(|v| v.stable)
-                .map(|v| v.version)
-                .ok_or_else(|| LauncherError::LoaderVersionNotFound {
-                    loader: LoaderKind::Fabric,
-                    version: "latest stable".to_string(),
-                })
+            Ok(crate::loader::fabric::latest_stable_loader(&versions)?
+                .version
+                .clone())
         }
     }
 }
@@ -233,30 +229,22 @@ fn resolve_quilt_loader_version(version: LoaderVersion) -> Result<String> {
         LoaderVersion::Exact(version) => Ok(version),
         LoaderVersion::Latest | LoaderVersion::LatestStable => {
             let versions = crate::loader::quilt::list_loader_versions()?;
-            versions.last().map(|v| v.version.clone()).ok_or_else(|| {
-                LauncherError::LoaderVersionNotFound {
-                    loader: LoaderKind::Quilt,
-                    version: "latest".to_string(),
-                }
-            })
+            Ok(crate::loader::quilt::latest_loader(&versions)?
+                .version
+                .clone())
         }
     }
 }
+
 fn resolve_forge_loader_version(minecraft_version: &str, version: LoaderVersion) -> Result<String> {
     match version {
         LoaderVersion::Exact(version) => Ok(version),
-
         LoaderVersion::Latest | LoaderVersion::LatestStable => {
             let versions = crate::loader::forge::list_forge_versions()?;
-
-            versions
-                .into_iter()
-                .filter(|v| v.starts_with(&format!("{minecraft_version}-")))
-                .last()
-                .ok_or_else(|| LauncherError::LoaderVersionNotFound {
-                    loader: LoaderKind::Forge,
-                    version: format!("latest for Minecraft {}", minecraft_version),
-                })
+            Ok(
+                crate::loader::forge::latest_for_minecraft(&versions, minecraft_version)?
+                    .to_string(),
+            )
         }
     }
 }
@@ -267,21 +255,12 @@ fn resolve_neoforge_loader_version(
 ) -> Result<String> {
     match version {
         LoaderVersion::Exact(version) => Ok(version),
-
         LoaderVersion::Latest | LoaderVersion::LatestStable => {
             let versions = crate::loader::neoforge::list_neoforge_versions()?;
-
-            versions
-                .into_iter()
-                .filter(|v| {
-                    // Adjust this if your version format differs.
-                    v.starts_with(&format!("{minecraft_version}-"))
-                })
-                .last()
-                .ok_or_else(|| LauncherError::LoaderVersionNotFound {
-                    loader: LoaderKind::NeoForge,
-                    version: format!("latest for Minecraft {}", minecraft_version),
-                })
+            Ok(
+                crate::loader::neoforge::latest_for_minecraft(&versions, minecraft_version)?
+                    .to_string(),
+            )
         }
     }
 }

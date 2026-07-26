@@ -98,3 +98,44 @@ fn explicit_game_directory_overrides_default_version_isolation() {
         .windows(2)
         .any(|window| window == ["--gameDir", "/tmp/custom-instance"]));
 }
+
+#[test]
+fn modern_custom_resolution_is_replaced_once() {
+    let version: VersionJson = serde_json::from_str(
+        r#"{
+            "id":"1.20.4",
+            "mainClass":"net.minecraft.client.main.Main",
+            "arguments":{
+                "jvm":["-cp","${classpath}"],
+                "game":[{
+                    "rules":[{"action":"allow","features":{"has_custom_resolution":true}}],
+                    "value":["--width","${resolution_width}","--height","${resolution_height}"]
+                }]
+            }
+        }"#,
+    )
+    .unwrap();
+
+    let command = build_launch_command(
+        &version,
+        PathBuf::from("/tmp/mc"),
+        LaunchOptions {
+            custom_resolution: Some((1280, 720)),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        command.args.iter().filter(|arg| *arg == "--width").count(),
+        1
+    );
+    assert_eq!(
+        command.args.iter().filter(|arg| *arg == "--height").count(),
+        1
+    );
+    assert!(command
+        .args
+        .windows(4)
+        .any(|window| window == ["--width", "1280", "--height", "720"]));
+}

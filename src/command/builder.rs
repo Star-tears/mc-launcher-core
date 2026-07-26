@@ -173,6 +173,17 @@ pub fn build_launch_command_for_platform(
         custom_resolution: options.custom_resolution.is_some(),
         ..Default::default()
     };
+    let resolution_width = options
+        .custom_resolution
+        .map(|(width, _)| width.to_string());
+    let resolution_height = options
+        .custom_resolution
+        .map(|(_, height)| height.to_string());
+    let mut extra = std::collections::HashMap::new();
+    if let (Some(width), Some(height)) = (&resolution_width, &resolution_height) {
+        extra.insert("${resolution_width}", width.as_str());
+        extra.insert("${resolution_height}", height.as_str());
+    }
     let context = ArgumentContext {
         minecraft_dir: &minecraft_dir,
         natives_dir: &natives_dir,
@@ -184,7 +195,7 @@ pub fn build_launch_command_for_platform(
         launcher_version: &options.launcher_version,
         version_type,
         assets_index,
-        extra: Default::default(),
+        extra,
     };
 
     let executable = options
@@ -218,12 +229,12 @@ pub fn build_launch_command_for_platform(
     }
 
     if let Some((width, height)) = options.custom_resolution {
-        args.extend([
-            "--width".to_string(),
-            width.to_string(),
-            "--height".to_string(),
-            height.to_string(),
-        ]);
+        if !args.iter().any(|arg| arg == "--width") {
+            args.extend(["--width".to_string(), width.to_string()]);
+        }
+        if !args.iter().any(|arg| arg == "--height") {
+            args.extend(["--height".to_string(), height.to_string()]);
+        }
     }
     if options.demo {
         args.push("--demo".to_string());

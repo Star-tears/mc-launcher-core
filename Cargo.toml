@@ -1,6 +1,6 @@
 [package]
 name = "mc-launcher-core"
-version = "0.1.1"
+version = "0.1.2"
 license = "MIT"
 description = "Rust building blocks for installing and launching Minecraft profiles."
 readme = "README.md"
